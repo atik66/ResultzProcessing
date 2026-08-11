@@ -2,1196 +2,1253 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Gradebook — Class Register</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2F4F42">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
-  :root{
-    --ink:#1E2A3A;
-    --ink-soft:#4A5A6A;
-    --paper:#FBF8F2;
-    --paper-line:#E4DDCB;
-    --chalk:#2F4F42;
-    --chalk-dark:#20362D;
-    --gold:#C9A24B;
-    --gold-soft:#F1E4C0;
-    --pass:#3A7D44;
-    --pass-bg:#E6F0E3;
-    --fail:#B84C3C;
-    --fail-bg:#FBEAE6;
-    --white:#FFFFFF;
-    --radius:10px;
-    --shadow:0 2px 10px rgba(30,42,58,0.08);
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background:var(--paper);
-    background-image:
-      linear-gradient(var(--paper-line) 1px, transparent 1px);
-    background-size: 100% 42px;
-    color:var(--ink);
-    font-family:'Inter',sans-serif;
-    min-height:100vh;
-  }
-  .app{ max-width:1180px; margin:0 auto; padding:28px 20px 80px; }
+:root{
+  --ink:#1E2A3A; --ink-soft:#4A5A6A;
+  --paper:#FBF8F2; --paper-line:#E4DDCB;
+  --chalk:#2F4F42; --chalk-dark:#20362D;
+  --gold:#C9A24B; --gold-soft:#F1E4C0;
+  --pass:#3A7D44; --pass-bg:#E6F0E3;
+  --fail:#B84C3C; --fail-bg:#FBEAE6;
+  --white:#FFFFFF; --radius:10px;
+  --shadow:0 2px 10px rgba(30,42,58,0.08);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;overflow-x:hidden;}
+body{
+  background:var(--paper);
+  background-image:linear-gradient(var(--paper-line) 1px,transparent 1px);
+  background-size:100% 42px;
+  color:var(--ink);font-family:'Inter',sans-serif;min-height:100vh;
+  padding-bottom:calc(70px + var(--safe-bottom));
+}
 
-  /* Header */
-  .masthead{
-    display:flex; align-items:center; justify-content:space-between;
-    background:var(--chalk); color:var(--paper);
-    border-radius:var(--radius);
-    padding:22px 28px;
-    box-shadow:var(--shadow);
-    background-image: radial-gradient(circle at 90% -10%, rgba(201,162,75,0.25), transparent 55%);
-  }
-  .masthead h1{
-    font-family:'Fraunces',serif; font-weight:600; font-size:1.7rem; margin:0;
-    letter-spacing:0.2px;
-  }
-  .masthead .tagline{ font-size:0.82rem; color:var(--gold-soft); margin-top:4px; letter-spacing:0.3px;}
-  .masthead .course-tag{
-    font-family:'JetBrains Mono',monospace; font-size:0.78rem;
-    background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);
-    padding:8px 14px; border-radius:8px; text-align:right; line-height:1.5;
-  }
+/* ── HEADER ── */
+.masthead{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--chalk);color:var(--paper);
+  padding:14px 16px;
+  background-image:radial-gradient(circle at 90% -10%,rgba(201,162,75,.25),transparent 55%);
+  position:sticky;top:0;z-index:100;
+}
+.masthead h1{font-family:'Fraunces',serif;font-weight:700;font-size:1.3rem;margin:0;line-height:1.1;}
+.masthead .tagline{font-size:0.7rem;color:var(--gold-soft);margin-top:2px;}
+.course-tag{
+  font-family:'JetBrains Mono',monospace;font-size:0.65rem;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  padding:5px 9px;border-radius:6px;text-align:right;line-height:1.5;
+  max-width:160px;word-break:break-all;
+}
 
-  /* Stepper */
-  .stepper{ display:flex; gap:8px; margin:22px 0 24px; }
-  .step-tab{
-    flex:1; text-align:left; cursor:pointer; user-select:none;
-    background:var(--white); border:1px solid var(--paper-line);
-    border-radius:var(--radius); padding:12px 16px;
-    transition:all .15s ease; position:relative;
-  }
-  .step-tab .num{
-    font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--ink-soft);
-    display:block; margin-bottom:2px;
-  }
-  .step-tab .label{ font-family:'Fraunces',serif; font-weight:600; font-size:0.98rem; }
-  .step-tab.active{
-    background:var(--chalk); border-color:var(--chalk);
-  }
-  .step-tab.active .num{ color:var(--gold); }
-  .step-tab.active .label{ color:var(--paper); }
-  .step-tab.done::after{
-    content:"✓"; position:absolute; top:10px; right:12px; color:var(--pass); font-weight:700;
-  }
-  .step-tab:not(.active):hover{ border-color:var(--gold); }
+/* ── BOTTOM TAB BAR (Mobile Nav) ── */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--chalk);
+  display:flex;
+  box-shadow:0 -2px 12px rgba(0,0,0,.2);
+  z-index:200;
+  padding-bottom:var(--safe-bottom);
+}
+.bnav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:8px 4px;cursor:pointer;color:rgba(251,248,242,.55);
+  font-size:0.6rem;font-weight:600;letter-spacing:.3px;
+  border:none;background:none;transition:.15s;gap:3px;
+  -webkit-tap-highlight-color:transparent;
+  min-height:56px;
+}
+.bnav-item.active{color:var(--gold);}
+.bnav-item .icon{font-size:1.3rem;line-height:1;}
+.bnav-item.done .icon::after{content:'✓';font-size:.55rem;vertical-align:super;color:var(--pass-bg);}
 
-  /* Panels */
-  .panel{
-    background:var(--white); border:1px solid var(--paper-line);
-    border-radius:var(--radius); padding:26px; box-shadow:var(--shadow);
-    margin-bottom:20px;
-  }
-  .panel h2{ font-family:'Fraunces',serif; font-size:1.3rem; margin:0 0 6px; }
-  .panel .sub{ color:var(--ink-soft); font-size:0.9rem; margin-bottom:18px; }
+/* ── CONTENT AREA ── */
+.app{max-width:740px;margin:0 auto;padding:14px 12px 20px;}
+.panel{background:var(--white);border:1px solid var(--paper-line);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-bottom:14px;}
+.panel h2{font-family:'Fraunces',serif;font-size:1.15rem;margin:0 0 4px;}
+.panel .sub{color:var(--ink-soft);font-size:0.82rem;margin-bottom:14px;line-height:1.5;}
 
-  /* Buttons */
-  button{ font-family:'Inter',sans-serif; cursor:pointer; border:none; border-radius:8px; }
-  .btn{
-    background:var(--chalk); color:var(--paper); padding:10px 18px;
-    font-weight:600; font-size:0.88rem; transition:background .15s;
-  }
-  .btn:hover{ background:var(--chalk-dark); }
-  .btn:disabled{ background:#ccc; cursor:not-allowed; }
-  .btn.gold{ background:var(--gold); color:var(--chalk-dark); }
-  .btn.gold:hover{ background:#b78f3c; }
-  .btn.outline{ background:transparent; color:var(--chalk); border:1.5px solid var(--chalk); }
-  .btn.outline:hover{ background:var(--chalk); color:var(--paper); }
-  .btn.small{ padding:6px 12px; font-size:0.78rem; }
-  .mic-btn{
-    width:38px; height:38px; border-radius:50%; background:var(--paper);
-    border:1.5px solid var(--chalk); font-size:1rem; display:inline-flex;
-    align-items:center; justify-content:center; transition:all .15s;
-  }
-  .mic-btn.listening{ background:var(--fail); border-color:var(--fail); color:white; animation:pulse 1s infinite; }
-  @keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(184,76,60,0.5);} 70%{box-shadow:0 0 0 10px rgba(184,76,60,0);} 100%{box-shadow:0 0 0 0 rgba(184,76,60,0);} }
+/* ── BUTTONS ── */
+button{font-family:'Inter',sans-serif;cursor:pointer;border:none;border-radius:8px;}
+.btn{background:var(--chalk);color:var(--paper);padding:11px 18px;font-weight:600;font-size:0.88rem;transition:background .15s;border-radius:8px;}
+.btn:hover,.btn:active{background:var(--chalk-dark);}
+.btn:disabled{background:#ccc;cursor:not-allowed;}
+.btn.gold{background:var(--gold);color:var(--chalk-dark);}
+.btn.gold:active{background:#b78f3c;}
+.btn.outline{background:transparent;color:var(--chalk);border:1.5px solid var(--chalk);}
+.btn.outline:active{background:var(--chalk);color:var(--paper);}
+.btn.small{padding:8px 13px;font-size:0.8rem;}
+.btn.full{width:100%;display:block;text-align:center;margin-top:10px;}
+.btn.danger{background:var(--fail);color:#fff;}
 
-  /* Upload zone */
-  .dropzone{
-    border:2px dashed var(--paper-line); border-radius:var(--radius);
-    padding:40px 20px; text-align:center; color:var(--ink-soft);
-    background:var(--paper); transition:border-color .15s;
-  }
-  .dropzone.drag{ border-color:var(--gold); background:var(--gold-soft); }
-  .dropzone input{ display:none; }
+/* ── DROPZONE ── */
+.dropzone{
+  border:2px dashed var(--paper-line);border-radius:var(--radius);
+  padding:30px 16px;text-align:center;color:var(--ink-soft);
+  background:var(--paper);transition:border-color .15s;
+}
+.dropzone.drag{border-color:var(--gold);background:var(--gold-soft);}
+.dropzone input{display:none;}
+.dropzone .icon{font-size:2rem;margin-bottom:8px;}
+.dropzone p{font-size:.84rem;margin:4px 0;}
 
-  /* Tables */
-  table{ width:100%; border-collapse:collapse; font-size:0.88rem; }
-  thead th{
-    text-align:left; font-family:'JetBrains Mono',monospace; font-size:0.72rem;
-    text-transform:uppercase; letter-spacing:0.5px; color:var(--ink-soft);
-    border-bottom:2px solid var(--ink); padding:10px 8px; background:var(--paper);
-    position:sticky; top:0;
-  }
-  tbody td{ padding:8px; border-bottom:1px solid var(--paper-line); vertical-align:middle; }
-  tbody tr:hover{ background:#FAF6ED; }
-  tbody tr.active-row{ background:var(--gold-soft); }
-  .tbl-wrap{ max-height:520px; overflow:auto; border:1px solid var(--paper-line); border-radius:8px; }
-  input.cell{
-    width:100%; padding:7px 8px; border:1px solid var(--paper-line); border-radius:6px;
-    font-family:'JetBrains Mono',monospace; font-size:0.85rem; background:var(--white); color:var(--ink);
-  }
-  input.cell:focus{ outline:none; border-color:var(--gold); box-shadow:0 0 0 2px var(--gold-soft); }
-  input.name-cell{ font-family:'Inter',sans-serif; }
-  td.num-cell input{ text-align:center; }
+/* ── TABLES — mobile card mode below 600px ── */
+table{width:100%;border-collapse:collapse;font-size:.86rem;}
+thead th{
+  text-align:left;font-family:'JetBrains Mono',monospace;font-size:.67rem;
+  text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);
+  border-bottom:2px solid var(--ink);padding:9px 7px;background:var(--paper);
+  position:sticky;top:0;z-index:1;
+}
+tbody td{padding:8px 7px;border-bottom:1px solid var(--paper-line);vertical-align:middle;}
+tbody tr:active{background:#FAF6ED;}
+tbody tr.active-row{background:var(--gold-soft);}
+.tbl-wrap{max-height:420px;overflow:auto;border:1px solid var(--paper-line);border-radius:8px;-webkit-overflow-scrolling:touch;}
 
-  .toolbar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
-  .toolbar .grow{ flex:1; }
-  select.field-select{
-    padding:9px 12px; border-radius:8px; border:1.5px solid var(--chalk); font-weight:600;
-    font-family:'Inter',sans-serif; background:var(--white); color:var(--chalk);
-  }
-  .status-pill{
-    display:inline-flex; align-items:center; gap:6px; font-size:0.8rem; padding:6px 12px;
-    border-radius:20px; background:var(--paper); border:1px solid var(--paper-line); color:var(--ink-soft);
-  }
-  .status-pill.live{ background:var(--fail-bg); color:var(--fail); border-color:var(--fail); }
+/* cell inputs */
+input.cell{
+  width:100%;padding:9px 8px;border:1px solid var(--paper-line);border-radius:6px;
+  font-family:'JetBrains Mono',monospace;font-size:.9rem;background:var(--white);color:var(--ink);
+  -webkit-appearance:none;
+}
+input.cell:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-soft);}
+input.name-cell{font-family:'Inter',sans-serif;}
+td.num-cell input{text-align:center;}
+input.num-wide{width:80px;text-align:center;}
 
-  .nav-row{ display:flex; justify-content:space-between; margin-top:6px; }
+/* ── VOICE BOX ── */
+.voice-panel{
+  background:var(--chalk);color:var(--paper);
+  border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;
+}
+.voice-panel .vp-title{font-family:'Fraunces',serif;font-size:1rem;font-weight:600;margin-bottom:10px;}
 
-  .badge{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.78rem; padding:3px 9px; border-radius:6px; }
-  .badge.pass{ background:var(--pass-bg); color:var(--pass); }
-  .badge.fail{ background:var(--fail-bg); color:var(--fail); }
-  .grade-chip{ font-family:'Fraunces',serif; font-weight:700; }
+/* BIG MIC button for mobile */
+.mic-big{
+  width:72px;height:72px;border-radius:50%;
+  background:var(--gold);border:none;font-size:2rem;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 14px rgba(0,0,0,.25);
+  transition:all .15s;flex-shrink:0;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.mic-big.listening{
+  background:var(--fail);
+  animation:pulse 1s infinite;
+}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(184,76,60,.6);}70%{box-shadow:0 0 0 16px rgba(184,76,60,0);}100%{box-shadow:0 0 0 0 rgba(184,76,60,0);}}
+.mic-big.disabled{background:#888;cursor:not-allowed;}
 
-  .stats-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:20px; }
-  .stat-card{
-    background:var(--paper); border:1px solid var(--paper-line); border-radius:10px; padding:14px 16px;
+.voice-row{display:flex;align-items:center;gap:14px;}
+.voice-info{flex:1;}
+.v-status{font-size:.82rem;color:var(--gold-soft);margin-bottom:5px;font-weight:500;}
+.v-heard{
+  background:rgba(255,255,255,.12);border-radius:6px;
+  padding:8px 10px;font-size:.85rem;min-height:38px;
+  word-break:break-word;line-height:1.4;
+}
+.v-heard.flash{background:rgba(201,162,75,.35);}
+
+/* field selector pills */
+.field-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.fpill{
+  padding:7px 12px;border-radius:20px;font-size:.78rem;font-weight:600;
+  cursor:pointer;border:1.5px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.1);color:rgba(251,248,242,.7);
+  transition:.15s;-webkit-tap-highlight-color:transparent;
+}
+.fpill.on{background:var(--gold);color:var(--chalk-dark);border-color:var(--gold);}
+
+/* language toggle */
+.lang-row{display:flex;gap:6px;margin-bottom:10px;}
+.lpill{
+  padding:6px 12px;border-radius:20px;font-size:.75rem;font-weight:700;
+  cursor:pointer;border:1.5px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.1);color:rgba(251,248,242,.7);
+  transition:.15s;-webkit-tap-highlight-color:transparent;
+}
+.lpill.on{background:var(--paper);color:var(--chalk-dark);border-color:var(--paper);}
+
+/* voice tips */
+.v-tips{font-size:.72rem;color:rgba(251,248,242,.5);margin-top:8px;line-height:1.5;}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.toolbar .grow{flex:1;}
+.hint{font-size:.77rem;color:var(--ink-soft);}
+
+/* ── ATTENDANCE SUMMARY CARDS ── */
+.attn-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+.attn-card{background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:10px;}
+.attn-card b{font-family:'Fraunces',serif;font-size:1.2rem;color:var(--chalk);display:block;}
+.attn-card small{font-size:.7rem;color:var(--ink-soft);}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px;}
+.stat-card{background:var(--paper);border:1px solid var(--paper-line);border-radius:10px;padding:12px 14px;}
+.stat-card .v{font-family:'Fraunces',serif;font-size:1.5rem;font-weight:700;color:var(--chalk);}
+.stat-card .l{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;}
+
+/* ── BADGES ── */
+.badge{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.75rem;padding:3px 9px;border-radius:6px;}
+.badge.pass{background:var(--pass-bg);color:var(--pass);}
+.badge.fail{background:var(--fail-bg);color:var(--fail);}
+.grade-chip{font-family:'Fraunces',serif;font-weight:700;}
+.top-row td{background:var(--gold-soft);}
+.medal{margin-right:4px;}
+
+/* ── REPORT HEAD ── */
+.report-head{text-align:center;margin:0 0 16px;padding-bottom:12px;border-bottom:2px solid var(--ink);}
+.report-head h2{margin:0;font-family:'Fraunces',serif;font-size:1.2rem;}
+.report-head p{margin:4px 0;color:var(--ink-soft);font-size:.82rem;}
+.top3-report{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:18px;}
+.top3-card{border:1px solid var(--paper-line);border-radius:10px;padding:12px;background:var(--paper);}
+.top3-card h4{margin:0 0 6px;font-family:'Fraunces',serif;font-size:.95rem;}
+.top3-card ol{margin:0;padding-left:18px;font-size:.82rem;}
+.top3-card li{margin-bottom:3px;}
+.top3-card li b{color:var(--chalk);font-family:'JetBrains Mono',monospace;}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:40px 20px;color:var(--ink-soft);}
+.empty .big{font-family:'Fraunces',serif;font-size:1.1rem;color:var(--ink);margin-bottom:6px;}
+
+/* ── PERMISSION BOX ── */
+.permission-box{padding:9px 12px;border-radius:8px;background:var(--gold-soft);color:var(--chalk-dark);font-size:.78rem;margin-bottom:10px;}
+
+/* ── NAV ROW ── */
+.nav-row{display:flex;justify-content:space-between;margin-top:12px;gap:8px;}
+.nav-row .btn{flex:1;}
+
+/* ── MOBILE MARK CARDS (≤480px) — swipe-friendly row cards ── */
+@media(max-width:480px){
+  .marks-desktop-tbl{display:none;}
+  .marks-cards{display:block;}
+  .mcard{
+    background:var(--paper);border:1px solid var(--paper-line);
+    border-radius:10px;padding:12px;margin-bottom:10px;
+    transition:.1s;
   }
-  .stat-card .v{ font-family:'Fraunces',serif; font-size:1.6rem; font-weight:700; color:var(--chalk); }
-  .stat-card .l{ font-size:0.75rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.4px; }
+  .mcard.active-card{background:var(--gold-soft);border-color:var(--gold);}
+  .mcard-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .mcard-name{font-weight:600;font-size:.9rem;}
+  .mcard-id{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--ink-soft);}
+  .mcard-num{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--ink-soft);}
+  .mcard-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;}
+  .mcard-field label{display:block;font-size:.65rem;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px;}
+  .mcard-field input{width:100%;padding:8px 6px;border:1px solid var(--paper-line);border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.95rem;text-align:center;background:var(--white);}
+  .mcard-field input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-soft);}
+  .mcard-total{font-family:'Fraunces',serif;font-size:1.1rem;font-weight:700;color:var(--chalk);}
+}
+@media(min-width:481px){
+  .marks-desktop-tbl{display:block;}
+  .marks-cards{display:none;}
+}
 
-  .hint{ font-size:0.78rem; color:var(--ink-soft); margin-top:6px; }
+/* ── ATTENDANCE MOBILE CARDS ── */
+@media(max-width:480px){
+  .attn-desktop-tbl{display:none;}
+  .attn-cards{display:block;}
+  .acard{
+    background:var(--paper);border:1px solid var(--paper-line);
+    border-radius:10px;padding:12px;margin-bottom:8px;
+    display:flex;align-items:center;gap:12px;
+  }
+  .acard.active-card{background:var(--gold-soft);border-color:var(--gold);}
+  .acard-info{flex:1;}
+  .acard-name{font-weight:600;font-size:.88rem;}
+  .acard-id{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--ink-soft);}
+  .acard-pct{font-size:.72rem;color:var(--ink-soft);margin-top:2px;}
+  .acard-input input{
+    width:72px;padding:10px 6px;border:1px solid var(--paper-line);border-radius:8px;
+    font-family:'JetBrains Mono',monospace;font-size:1.1rem;text-align:center;background:var(--white);
+  }
+  .acard-input input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-soft);}
+}
+@media(min-width:481px){
+  .attn-desktop-tbl{display:block;}
+  .attn-cards{display:none;}
+}
 
-  .tp-batch{ margin-bottom:16px; border:1px solid var(--paper-line); border-radius:10px; overflow:hidden; }
-  .tp-batch h3{
-    font-family:'Fraunces',serif; font-size:1rem; margin:0; padding:10px 16px;
-    background:var(--chalk); color:var(--paper);
-  }
-  .tp-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:0; }
-  .tp-col{ padding:12px 16px; border-left:1px solid var(--paper-line); }
-  .tp-col:first-child{ border-left:none; }
-  .tp-col .tp-label{ font-family:'JetBrains Mono',monospace; font-size:0.7rem; text-transform:uppercase; color:var(--ink-soft); letter-spacing:0.5px; margin-bottom:8px; }
-  .tp-col ol{ margin:0; padding-left:18px; font-size:0.85rem; }
-  .tp-col li{ margin-bottom:4px; }
-  .tp-col li b{ color:var(--chalk); font-family:'JetBrains Mono',monospace; }
-  .tp-empty{ color:var(--ink-soft); font-size:0.8rem; font-style:italic; }
-  .empty{ text-align:center; padding:50px 20px; color:var(--ink-soft); }
-  .empty .big{ font-family:'Fraunces',serif; font-size:1.15rem; color:var(--ink); margin-bottom:6px; }
-
-  @media print{
-    body{ background:white; }
-    .masthead, .stepper, .toolbar, .nav-row, .no-print, .dropzone{ display:none !important; }
-    .panel{ box-shadow:none; border:none; padding:0; }
-    #panel-4{ display:block !important; }
-    .step-tab, .app > .panel:not(#panel-4){ display:none !important; }
-  }
-  @media (max-width:720px){
-    .stepper{ flex-direction:column; }
-    .masthead{ flex-direction:column; align-items:flex-start; gap:12px; }
-  }
+/* ── PRINT ── */
+.print-footer{display:none;}
+@page{size:A4 portrait;margin:14mm 12mm;}
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  html,body{background:white;}
+  body{background-image:none;padding-bottom:0;}
+  .masthead,.bottom-nav,.toolbar,.nav-row,.no-print,.dropzone,.voice-panel,.marks-cards,.attn-cards{display:none!important;}
+  .panel{box-shadow:none;border:none;padding:0;}
+  #panel-4{display:block!important;}
+  #panel-4 > h2{display:none;}
+  .app>#panel-1,#panel-2,#panel-3{display:none!important;}
+  .tbl-wrap{max-height:none!important;overflow:visible!important;border:none!important;}
+  table{font-size:9pt;width:100%;}
+  thead{display:table-header-group;}
+  thead th{position:static!important;background:var(--paper)!important;}
+  tbody tr,th{page-break-inside:avoid;}
+  .report-head{page-break-after:avoid;}
+  .print-footer{display:block;margin-top:34px;}
+  .print-footer .sign-row{display:flex;justify-content:space-between;margin-top:56px;}
+  .print-footer .sign-block{width:150px;text-align:center;font-size:.76rem;color:var(--ink-soft);border-top:1px solid var(--ink);padding-top:6px;}
+  .print-footer .gen-date{text-align:right;font-size:.7rem;color:var(--ink-soft);margin-top:14px;}
+}
 </style>
 </head>
 <body>
+
+<div class="masthead no-print">
+  <div>
+    <h1>Gradebook</h1>
+    <div class="tagline">Roster · Attendance · Marks · Result</div>
+  </div>
+  <div class="course-tag" id="courseTag">—</div>
+</div>
+
 <div class="app">
 
-  <div class="masthead">
-    <div>
-      <h1>Gradebook</h1>
-      <div class="tagline">Roster → Attendance → Marks → Result</div>
-    </div>
-    <div class="course-tag" id="courseTag">Course: — · Code: — · Batch: —</div>
-  </div>
-
-  <div class="stepper no-print">
-    <div class="step-tab active" data-step="1"><span class="num">Step 01</span><span class="label">Student Sheet</span></div>
-    <div class="step-tab" data-step="2"><span class="num">Step 02</span><span class="label">Attendance</span></div>
-    <div class="step-tab" data-step="3"><span class="num">Step 03</span><span class="label">Enter Marks</span></div>
-    <div class="step-tab" data-step="4"><span class="num">Step 04</span><span class="label">Marksheet</span></div>
-  </div>
-
-  <!-- STEP 1 -->
-  <div class="panel" id="panel-1">
-    <h2>Student Sheet</h2>
-    <div class="sub">Upload the class list PDF. We'll pull out Student ID, Name, Batch and Course Code — check the table below and fix anything before moving on.</div>
+  <!-- STEP 1: Student Sheet -->
+  <div id="panel-1" class="panel">
+    <h2>📄 Student Sheet</h2>
+    <div class="sub">Upload your class list PDF. Student IDs and names are extracted automatically.</div>
 
     <div class="dropzone no-print" id="dropzone">
-      <div>📄 Drop a PDF here, or</div>
-      <button class="btn gold" style="margin-top:10px" id="pickFileBtn">Choose PDF file</button>
       <input type="file" id="fileInput" accept="application/pdf">
-      <div class="hint" id="fileStatus">No file loaded yet.</div>
+      <div class="icon">📑</div>
+      <p>Drop PDF here or</p>
+      <button class="btn gold" style="margin-top:8px" id="pickFileBtn">Choose PDF</button>
+      <div class="hint" style="margin-top:8px" id="fileStatus">No file loaded yet.</div>
     </div>
 
-    <div class="toolbar no-print" style="margin-top:18px; align-items:flex-end;">
-      <div>
-        <label class="hint">Course Name</label><br>
-        <input class="cell" id="courseNameInput" placeholder="e.g. Data Structures" style="width:220px;">
-      </div>
-      <div>
-        <label class="hint">Course Code</label><br>
-        <input class="cell" id="courseCodeInput" placeholder="e.g. CSE-221" style="width:140px;">
-      </div>
-      <div>
-        <label class="hint">Batch/Section</label><br>
-        <input class="cell" id="courseBatchInput" placeholder="e.g. CSE-33-D" style="width:140px;">
-      </div>
-    </div>
+    <div id="rosterTableWrap" style="margin-top:16px;"></div>
 
-    <div style="margin-top:20px;" id="rosterTableWrap"></div>
-
-    <div class="toolbar no-print" style="margin-top:16px;">
-      <button class="btn outline small" id="addRowBtn">+ Add student row</button>
+    <div class="toolbar no-print" style="margin-top:12px;">
+      <button class="btn outline small" id="addRowBtn">+ Add row</button>
       <div class="grow"></div>
       <span class="hint" id="rosterCount"></span>
     </div>
-
     <div class="nav-row no-print">
       <span></span>
-      <button class="btn" id="toStep2Btn" disabled>Continue to Attendance →</button>
+      <button class="btn" id="toStep2Btn" disabled>Attendance →</button>
     </div>
   </div>
 
-  <!-- STEP 2 -->
-  <div class="panel" id="panel-2" style="display:none;">
-    <h2>Attendance Sheet</h2>
-    <div class="sub">Enter how many classes have been held in total, then type or speak how many classes each student attended. The Marks/10 column is calculated automatically from the % table below — but you can always click into it and type your own number instead.</div>
+  <!-- STEP 2: Attendance -->
+  <div id="panel-2" class="panel" style="display:none">
+    <h2>📊 Attendance</h2>
+    <div class="sub">Enter total classes held, then enter how many each student attended. Or use voice — say numbers one by one.</div>
 
-    <div class="toolbar no-print" style="margin-bottom:10px;">
-      <label class="hint" style="margin-right:-6px;">Total classes held:</label>
-      <input type="number" min="1" step="1" id="totalClassesInput" class="cell" style="width:90px;" placeholder="e.g. 30">
-      <span class="hint" id="totalClassesHint"></span>
-    </div>
+    <div class="permission-box no-print">🎤 First time: tap the mic and allow microphone access. Works best in Chrome/Edge.</div>
 
+    <!-- Classes held input -->
     <div class="toolbar no-print">
-      <button class="btn gold mic-btn" id="attnMicBtn" title="Start voice attendance">🎤</button>
-      <span class="status-pill" id="attnStatus">Voice off</span>
-      <span class="hint" id="attnHeard" style="min-width:120px;"></span>
-      <div class="grow"></div>
-      <span class="hint">Say a number, or "next" / "skip"</span>
+      <label class="hint" style="white-space:nowrap">Classes held:</label>
+      <input class="cell" id="totalClassesInput" type="number" min="1" style="max-width:90px;font-size:.95rem;" placeholder="e.g. 30">
+      <button class="btn small outline" id="applyClassesBtn">Apply</button>
     </div>
 
-    <div class="tbl-wrap" id="attnTableWrap"></div>
-
-    <details style="margin-top:14px;">
-      <summary class="hint" style="cursor:pointer;">Attendance % → Marks table</summary>
-      <div class="tp-grid" style="grid-template-columns:repeat(2,1fr); margin-top:8px;">
-        <table style="font-size:0.82rem;"><tbody>
-          <tr><td>90–100%</td><td><b>10</b></td></tr>
-          <tr><td>85–89%</td><td><b>9</b></td></tr>
-          <tr><td>80–84%</td><td><b>8</b></td></tr>
-          <tr><td>75–79%</td><td><b>7</b></td></tr>
-          <tr><td>70–74%</td><td><b>6</b></td></tr>
-        </tbody></table>
-        <table style="font-size:0.82rem;"><tbody>
-          <tr><td>65–69%</td><td><b>5</b></td></tr>
-          <tr><td>60–64%</td><td><b>4</b></td></tr>
-          <tr><td>55–59%</td><td><b>3</b></td></tr>
-          <tr><td>50–54%</td><td><b>2</b></td></tr>
-          <tr><td>Below 50%</td><td><b>0</b></td></tr>
-        </tbody></table>
+    <!-- Voice box for attendance -->
+    <div class="voice-panel no-print" id="attnVoicePanel">
+      <div class="vp-title">🎤 Voice Attendance</div>
+      <div class="lang-row" id="attnLangRow"></div>
+      <div class="voice-row">
+        <button class="mic-big" id="attnMicBtn">🎤</button>
+        <div class="voice-info">
+          <div class="v-status" id="attnStatus">Tap mic to start</div>
+          <div class="v-heard" id="attnHeard">Speak a number…</div>
+        </div>
       </div>
-    </details>
+      <div class="v-tips">Say a number → it saves and moves to next student automatically.<br>Say "next" (or "পরে") to skip. Say multiple: "8 next 9 next 10"</div>
+    </div>
+
+    <div id="attnSummary"></div>
+
+    <!-- Mobile cards -->
+    <div class="attn-cards" id="attnCards"></div>
+    <!-- Desktop table -->
+    <div class="attn-desktop-tbl tbl-wrap" id="attnTableWrap"></div>
 
     <div class="nav-row no-print">
       <button class="btn outline" id="backTo1Btn">← Back</button>
-      <button class="btn" id="toStep3Btn">Continue to Marks →</button>
+      <button class="btn" id="toStep3Btn">Marks →</button>
     </div>
   </div>
 
-  <!-- STEP 3 -->
-  <div class="panel" id="panel-3" style="display:none;">
-    <h2>Enter Marks</h2>
-    <div class="sub">Type directly into the table, or pick a field, click the mic, and speak the number — it fills in and jumps to the next student. Made a mistake earlier? Click that cell and type over it — use ↑/↓ to move between rows without losing your place.</div>
+  <!-- STEP 3: Marks -->
+  <div id="panel-3" class="panel" style="display:none">
+    <h2>✏️ Enter Marks</h2>
+    <div class="sub">Select a field, tap the big mic, speak the mark. It auto-advances to the next student. Or type directly in the table.</div>
 
-    <div class="toolbar no-print">
-      <label class="hint" style="margin-right:-6px;">Field:</label>
-      <select class="field-select" id="fieldSelect">
-        <option value="ct1">CT1 (0–5)</option>
-        <option value="ct2">CT2 (0–5)</option>
-        <option value="mid">Mid (0–30)</option>
-        <option value="final">Final (0–40)</option>
-        <option value="asgn1">Assignment 1 (0–5)</option>
-        <option value="asgn2">Assignment 2 (0–5)</option>
-      </select>
-      <button class="btn gold mic-btn" id="marksMicBtn" title="Start voice marks entry">🎤</button>
-      <span class="status-pill" id="marksStatus">Voice off</span>
-      <span class="hint" id="marksHeard" style="min-width:120px;"></span>
-      <div class="grow"></div>
-      <span class="hint">Say a number, or "next" / "skip"</span>
+    <!-- Voice box for marks -->
+    <div class="voice-panel no-print">
+      <div class="vp-title">🎤 Voice Marks</div>
+      <div class="lang-row" id="marksLangRow"></div>
+      <div class="field-pills" id="fieldPills"></div>
+      <div class="voice-row">
+        <button class="mic-big" id="marksMicBtn">🎤</button>
+        <div class="voice-info">
+          <div class="v-status" id="marksStatus">Select field above, then tap mic</div>
+          <div class="v-heard" id="marksHeard">Speak a number…</div>
+        </div>
+      </div>
+      <div class="v-tips">Say: "15", "eight", "twenty five", "আট" (8), "৩৫", "3 point 5", "next" to skip.<br>Mic auto-restarts — keep speaking without re-tapping.</div>
     </div>
 
-    <div class="tbl-wrap" id="marksTableWrap"></div>
+    <!-- Mobile cards -->
+    <div class="marks-cards" id="marksCards"></div>
+    <!-- Desktop table -->
+    <div class="marks-desktop-tbl tbl-wrap" id="marksTableWrap"></div>
 
     <div class="nav-row no-print">
       <button class="btn outline" id="backTo2Btn">← Back</button>
-      <button class="btn" id="toStep4Btn">Generate Marksheet →</button>
+      <button class="btn" id="toStep4Btn">Generate →</button>
     </div>
   </div>
 
-  <!-- STEP 4 -->
-  <div class="panel" id="panel-4" style="display:none;">
-    <div class="report-header" id="reportHeader" style="margin-bottom:14px;">
-      <h2 style="margin-bottom:2px;">Semester Marksheet</h2>
-      <div class="hint" id="reportCourseLine" style="font-size:0.92rem;"></div>
-    </div>
-    <div class="sub">CT1+CT2 = 10 · Mid = 30 · Final = 40 · Assignment 1+2 = 10 · Total = 90 (Attendance shown separately, not counted in Total)</div>
-
+  <!-- STEP 4: Marksheet -->
+  <div id="panel-4" class="panel" style="display:none">
+    <h2>📋 Semester Marksheet</h2>
+    <div class="sub">CT1+CT2=10 · Mid=30 · Final=40 · Asgn1+2=10 · Attendance=10 · Total=100</div>
     <div class="stats-grid" id="statsGrid"></div>
-
-    <div id="topPerformers" style="margin-bottom:22px;"></div>
-
+    <div id="topPerformers" style="margin-bottom:18px;"></div>
     <div class="toolbar no-print">
-      <button class="btn outline small" id="csvBtn">⬇ Download CSV</button>
+      <button class="btn outline small" id="csvBtn">⬇ CSV</button>
       <button class="btn outline small" id="printBtn">🖨 Print</button>
-      <div class="grow"></div>
     </div>
-
     <div class="tbl-wrap" id="marksheetWrap"></div>
-
+    <div class="print-footer">
+      <div class="sign-row">
+        <div class="sign-block">Class Teacher</div>
+        <div class="sign-block">Guardian</div>
+        <div class="sign-block">Principal</div>
+      </div>
+      <div class="gen-date" id="genDate"></div>
+    </div>
     <div class="nav-row no-print">
       <button class="btn outline" id="backTo3Btn">← Back</button>
       <span></span>
     </div>
   </div>
 
-</div>
+</div><!-- end .app -->
+
+<!-- BOTTOM TAB BAR -->
+<nav class="bottom-nav no-print">
+  <button class="bnav-item active" data-step="1">
+    <span class="icon">📄</span>Roster
+  </button>
+  <button class="bnav-item" data-step="2">
+    <span class="icon">📊</span>Attendance
+  </button>
+  <button class="bnav-item" data-step="3">
+    <span class="icon">✏️</span>Marks
+  </button>
+  <button class="bnav-item" data-step="4">
+    <span class="icon">📋</span>Result
+  </button>
+</nav>
 
 <script>
-/* ---------------- State ---------------- */
-let students = [];         // {id, sid, name, batch, course}
-let attendance = {};        // sid -> number 0-10
-let marks = {};              // sid -> {ct1,ct2,mid,final,asgn1,asgn2}
-let currentStep = 1;
-let attnActiveIdx = 0;
-let marksActiveIdx = 0;
-let courseInfo = { course:'', code:'', batch:'', totalClasses:'' };
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-const FIELD_CAPS = { ct1:5, ct2:5, mid:30, final:40, asgn1:5, asgn2:5 };
-const MAX_TOTAL = FIELD_CAPS.ct1 + FIELD_CAPS.ct2 + FIELD_CAPS.mid + FIELD_CAPS.final + FIELD_CAPS.asgn1 + FIELD_CAPS.asgn2; // 90
+/* ── STATE ── */
+let students=[];
+let attendance={};
+let totalClasses=0;
+let marks={};
+let currentStep=1;
+let attnActiveIdx=0;
+let marksActiveIdx=0;
+let courseInfo={course:'',code:'',batch:''};
+let activeMarkField='ct1';
+let voiceLang='en-US';
 
-/* Attendance % -> marks/10 table (based on classes attended out of classes held) */
-function attendanceMarkFromPercent(pct){
-  if(pct===null || pct===undefined || isNaN(pct)) return undefined;
-  if(pct>=90) return 10;
-  if(pct>=85) return 9;
-  if(pct>=80) return 8;
-  if(pct>=75) return 7;
-  if(pct>=70) return 6;
-  if(pct>=65) return 5;
-  if(pct>=60) return 4;
-  if(pct>=55) return 3;
-  if(pct>=50) return 2;
-  return 0;
-}
-/* attendance[sid] = { present:number, override:number|null } */
-function getAttendanceMark(sid){
-  const rec = attendance[sid];
-  if(!rec) return { mark:undefined, pct:undefined, isOverride:false };
-  const total = parseFloat(courseInfo.totalClasses);
-  const pct = (total>0 && rec.present!==undefined && rec.present!==null && rec.present!=='')
-    ? (parseFloat(rec.present)/total)*100 : undefined;
-  const auto = attendanceMarkFromPercent(pct);
-  const hasOverride = rec.override!==undefined && rec.override!==null && rec.override!=='';
-  return { mark: hasOverride ? parseFloat(rec.override) : auto, pct, isOverride: hasOverride, auto };
-}
+const FIELD_CAPS={ct1:5,ct2:5,mid:30,final:40,asgn1:5,asgn2:5};
+const FIELD_LABELS={ct1:'CT1 /5',ct2:'CT2 /5',mid:'Mid /30',final:'Final /40',asgn1:'A1 /5',asgn2:'A2 /5'};
 
-/* ---------------- Storage ---------------- */
+/* ── STORAGE (artifact-compatible, fallback to memory) ── */
+const Store={
+  async set(k,v){
+    try{if(window.storage){await window.storage.set(k,v);return;}}catch(e){}
+    try{localStorage.setItem(k,v);}catch(e){}
+  },
+  async get(k){
+    try{if(window.storage){const r=await window.storage.get(k);return r?r.value:null;}}catch(e){}
+    try{return localStorage.getItem(k);}catch(e){}
+    return null;
+  }
+};
 async function saveState(){
-  try{
-    await window.storage.set('gb-students', JSON.stringify(students));
-    await window.storage.set('gb-attendance', JSON.stringify(attendance));
-    await window.storage.set('gb-marks', JSON.stringify(marks));
-    await window.storage.set('gb-course', JSON.stringify(courseInfo));
-  }catch(e){ console.warn('save failed', e); }
+  await Store.set('gb-students',JSON.stringify(students));
+  await Store.set('gb-attendance',JSON.stringify(attendance));
+  await Store.set('gb-total-classes',String(totalClasses));
+  await Store.set('gb-marks',JSON.stringify(marks));
+  await Store.set('gb-course',JSON.stringify(courseInfo));
+  await Store.set('gb-voice-lang',voiceLang);
 }
 async function loadState(){
-  try{
-    const s = await window.storage.get('gb-students');
-    if(s) students = JSON.parse(s.value);
-  }catch(e){}
-  try{
-    const a = await window.storage.get('gb-attendance');
-    if(a) attendance = JSON.parse(a.value);
-  }catch(e){}
-  try{
-    const m = await window.storage.get('gb-marks');
-    if(m) marks = JSON.parse(m.value);
-  }catch(e){}
-  try{
-    const c = await window.storage.get('gb-course');
-    if(c) courseInfo = Object.assign({ course:'', code:'', batch:'', totalClasses:'' }, JSON.parse(c.value));
-  }catch(e){}
-  // migrate old attendance format (plain number out of 10) to {present, override}
-  Object.keys(attendance).forEach(sid=>{
-    const v = attendance[sid];
-    if(typeof v === 'number'){
-      attendance[sid] = { present: undefined, override: v };
+  try{const s=await Store.get('gb-students');if(s)students=JSON.parse(s);}catch(e){}
+  try{const a=await Store.get('gb-attendance');if(a)attendance=JSON.parse(a);}catch(e){}
+  try{const tc=await Store.get('gb-total-classes');if(tc)totalClasses=parseInt(tc)||0;}catch(e){}
+  try{const m=await Store.get('gb-marks');if(m)marks=JSON.parse(m);}catch(e){}
+  try{const c=await Store.get('gb-course');if(c)courseInfo=JSON.parse(c);}catch(e){}
+  try{const vl=await Store.get('gb-voice-lang');if(vl)voiceLang=vl;}catch(e){}
+}
+
+/* ── VOICE ENGINE (robust mobile) ── */
+const VoiceEngine=(()=>{
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const INSECURE = !(location.protocol==='https:' || location.hostname==='localhost' || location.hostname==='127.0.0.1');
+  let rec=null,mode=null,cb=null,statusEl=null,micBtn=null,heardEl=null;
+  let wanted=false,restarting=false,silenceTimer=null;
+  let currentLang='en-US';
+
+  function setUI(on){
+    if(micBtn){
+      micBtn.classList.toggle('listening',on);
+      micBtn.textContent=on?'⏹':'🎤';
     }
-  });
-}
-
-function updateCourseTag(){
-  document.getElementById('courseTag').textContent =
-    `Course: ${courseInfo.course || '—'} · Code: ${courseInfo.code || '—'} · Batch: ${courseInfo.batch || '—'}`;
-  const nameInp = document.getElementById('courseNameInput');
-  const codeInp = document.getElementById('courseCodeInput');
-  const batchInp = document.getElementById('courseBatchInput');
-  if(nameInp && document.activeElement!==nameInp) nameInp.value = courseInfo.course || '';
-  if(codeInp && document.activeElement!==codeInp) codeInp.value = courseInfo.code || '';
-  if(batchInp && document.activeElement!==batchInp) batchInp.value = courseInfo.batch || '';
-}
-function wireCourseInfoInputs(){
-  document.getElementById('courseNameInput').addEventListener('input', e=>{
-    courseInfo.course = e.target.value;
-    document.getElementById('courseTag').textContent =
-      `Course: ${courseInfo.course || '—'} · Code: ${courseInfo.code || '—'} · Batch: ${courseInfo.batch || '—'}`;
-    saveState();
-  });
-  document.getElementById('courseCodeInput').addEventListener('input', e=>{
-    courseInfo.code = e.target.value;
-    document.getElementById('courseTag').textContent =
-      `Course: ${courseInfo.course || '—'} · Code: ${courseInfo.code || '—'} · Batch: ${courseInfo.batch || '—'}`;
-    saveState();
-  });
-  document.getElementById('courseBatchInput').addEventListener('input', e=>{
-    courseInfo.batch = e.target.value;
-    document.getElementById('courseTag').textContent =
-      `Course: ${courseInfo.course || '—'} · Code: ${courseInfo.code || '—'} · Batch: ${courseInfo.batch || '—'}`;
-    saveState();
-  });
-}
-
-/* ---------------- Voice number parsing ---------------- */
-const NUM_WORDS = {
-  zero:0, oh:0, o:0, one:1, won:1, two:2, to:2, too:2, three:3, tree:3, free:3,
-  four:4, for:4, fore:4, five:5, six:6, sicks:6, seven:7, eight:8, ate:8,
-  nine:9, ten:10, eleven:11, twelve:12, thirteen:13, fourteen:14, fifteen:15,
-  sixteen:16, seventeen:17, eighteen:18, nineteen:19,
-  twenty:20, thirty:30, forty:40, fourty:40, fifty:50
-};
-function wordsToNumber(raw){
-  if(!raw) return null;
-  let t = raw.toLowerCase().trim().replace(/[.,!?]+$/,'');
-  if(/^(next|skip|pass|go)\b/.test(t)) return 'NEXT';
-  // strip filler words that speech-to-text sometimes adds
-  t = t.replace(/\b(mark|marks|point|of|is|the|a)\b\s*$/,'').trim();
-  // direct numeric, incl decimal e.g. "7.5"
-  if(/^-?\d+(\.\d+)?$/.test(t)) return parseFloat(t);
-  // "seven point five" / "seven decimal five"
-  let pointMatch = t.match(/^([a-z]+)\s+(?:point|decimal)\s+([a-z]+)$/);
-  if(pointMatch){
-    let whole = NUM_WORDS[pointMatch[1]];
-    let dec = NUM_WORDS[pointMatch[2]];
-    if(whole!==undefined && dec!==undefined) return parseFloat(`${whole}.${dec}`);
   }
-  // "7 point 5" numeric+word mix
-  let mixMatch = t.match(/^(\d+)\s+(?:point|decimal)\s+(\d+)$/);
-  if(mixMatch) return parseFloat(`${mixMatch[1]}.${mixMatch[2]}`);
-  // compound like "twenty five" / "thirty eight"
-  let parts = t.split(/\s+/).filter(Boolean);
-  if(parts.length===2 && NUM_WORDS[parts[0]]!==undefined && NUM_WORDS[parts[1]]!==undefined && NUM_WORDS[parts[0]]>=20 && NUM_WORDS[parts[1]]<10){
-    return NUM_WORDS[parts[0]] + NUM_WORDS[parts[1]];
+
+  function clearSilenceTimer(){if(silenceTimer){clearTimeout(silenceTimer);silenceTimer=null;}}
+
+  function resetSilenceTimer(){
+    clearSilenceTimer();
+    // Auto-restart after 4s silence on mobile (insurance)
+    silenceTimer=setTimeout(()=>{
+      if(wanted&&!restarting){restart();}
+    },4000);
   }
-  if(NUM_WORDS[t]!==undefined) return NUM_WORDS[t];
-  // last resort: pull any digits or a single known number-word out of the phrase
-  let direct = t.match(/-?\d+(\.\d+)?/);
-  if(direct) return parseFloat(direct[0]);
-  for(const w of parts){ if(NUM_WORDS[w]!==undefined) return NUM_WORDS[w]; }
-  return null;
-}
 
-/* ---------------- Shared voice engine (one mic at a time) ----------------
-   Chrome's SpeechRecognition tends to get "stuck" or stop recognizing well
-   after many results come through one long-lived continuous session, so
-   instead of reusing one instance we spin up a fresh one for every single
-   utterance. Each cycle: listen for one phrase -> fire result -> tear down
-   -> start a brand-new instance almost immediately. This keeps recognition
-   accurate no matter how many numbers in a row you say. */
-const VoiceEngine = (()=>{
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let rec = null;
-  let mode = null;            // 'attn' | 'marks' | null
-  let onFinalCb = null;
-  let statusEl = null, micBtn = null, heardEl = null;
-  let wantListening = false;
-  let restartTimer = null;
-  let errorStreak = 0;
-  let startingNew = false;    // guards against overlapping start() calls firing two recognizers
-
-  function freshRecognizer(){
-    const r = new SR();
-    r.continuous = false;     // one utterance per instance — avoids long-session degradation
-    r.interimResults = true;
-    r.lang = 'en-US';
-    r.maxAlternatives = 1;
-    r.onresult = (e)=>{
-      const res = e.results[e.results.length-1];
-      const transcript = res[0].transcript;
-      if(heardEl) heardEl.textContent = '“' + transcript.trim() + '”';
-      if(res.isFinal){
-        errorStreak = 0;
-        // start the next recognizer immediately (don't wait for onend) so back-to-back
-        // numbers aren't clipped by the gap between tearing down and restarting
-        clearTimeout(restartTimer);
-        restartTimer = setTimeout(cycle, 30);
-        if(onFinalCb) onFinalCb(transcript);
+  function restart(){
+    if(!wanted||restarting)return;
+    restarting=true;
+    try{if(rec)rec.abort();}catch(e){}
+    setTimeout(()=>{
+      restarting=false;
+      if(wanted){
+        make_and_start();
+        if(navigator.vibrate)navigator.vibrate(20);
+        if(statusEl){statusEl.textContent='Listening…';}
       }
-    };
-    r.onerror = (e)=>{
-      if(e.error === 'not-allowed' || e.error === 'service-not-allowed'){
-        wantListening = false;
-        setUi(false);
-        if(statusEl){
-          statusEl.textContent = 'Microphone blocked — allow access in your browser\'s address-bar/site settings, then click 🎤 again';
-          statusEl.classList.add('live');
+    },120);
+  }
+
+  function make_and_start(){
+    if(!SR||!wanted)return;
+    rec=new SR();
+    rec.continuous=false;   // single-utterance chaining = most reliable on Android
+    rec.interimResults=true;
+    rec.lang=currentLang;
+    rec.maxAlternatives=5;  // more alternatives = better number recognition
+
+    rec.onresult=e=>{
+      clearSilenceTimer();
+      let interim='',finalText='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        const t=e.results[i][0].transcript;
+        if(e.results[i].isFinal)finalText+=' '+t;
+        else interim=t;
+      }
+      // Show interim immediately for feedback
+      if(heardEl&&interim){heardEl.textContent='"'+interim.trim()+'"';}
+      if(finalText.trim()){
+        if(heardEl){
+          heardEl.textContent='"'+finalText.trim()+'"';
+          heardEl.classList.add('flash');
+          setTimeout(()=>heardEl.classList.remove('flash'),500);
         }
+        if(cb)cb(finalText.trim());
+      }
+      resetSilenceTimer();
+    };
+    rec.onspeechend=()=>{
+      // Immediately stop to finalize — prevents lag on mobile
+      try{rec.stop();}catch(e){}
+    };
+    rec.onerror=e=>{
+      clearSilenceTimer();
+      if(e.error==='not-allowed'||e.error==='service-not-allowed'){
+        wanted=false;setUI(false);
+        if(statusEl){statusEl.textContent='❌ Mic blocked — allow microphone access in your browser/app settings';}
         return;
       }
-      if(e.error !== 'no-speech' && e.error !== 'aborted') errorStreak++;
-    };
-    r.onend = ()=>{
-      if(!wantListening) return;
-      // if onresult already scheduled the next cycle, don't double-schedule
-      if(restartTimer) return;
-      const delay = errorStreak > 3 ? 500 : 20;
-      restartTimer = setTimeout(cycle, delay);
-    };
-    return r;
-  }
-
-  function cycle(){
-    restartTimer = null;
-    if(!wantListening) return;
-    rec = freshRecognizer();
-    try{ rec.start(); }catch(e){ /* a start-while-starting race; the pending timer will retry */ }
-  }
-
-  function setUi(listening){
-    if(!micBtn) return;
-    micBtn.dataset.listening = listening ? '1' : '0';
-    micBtn.classList.toggle('listening', listening);
-  }
-
-  // Explicitly request mic access up front via getUserMedia. This makes the permission
-  // prompt appear reliably (some browsers are inconsistent about prompting from
-  // SpeechRecognition.start() alone) and lets us give a clear message on denial
-  // instead of the recognizer silently failing/looping.
-  async function ensureMicPermission(){
-    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-      return true; // can't pre-check; let SpeechRecognition try directly
-    }
-    try{
-      const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
-      stream.getTracks().forEach(t=>t.stop());
-      return true;
-    }catch(err){
-      if(statusEl){
-        statusEl.textContent = 'Microphone permission denied — allow it in your browser settings and try again';
-        statusEl.classList.add('live');
+      if(e.error==='audio-capture'){
+        wanted=false;setUI(false);
+        if(statusEl){statusEl.textContent='❌ No microphone found on this device';}
+        return;
       }
+      if(e.error==='language-not-supported'){
+        wanted=false;setUI(false);
+        if(statusEl){statusEl.textContent='❌ '+(currentLang==='bn-BD'?'বাংলা':'This language')+' isn\'t supported on this device — try English';}
+        return;
+      }
+      if(e.error==='network'){
+        if(statusEl)statusEl.textContent='⚠️ Weak/no internet — voice needs a live connection. Retrying…';
+        if(wanted)setTimeout(restart,600);
+        return;
+      }
+      if(e.error==='no-speech'){
+        if(wanted)restart();
+        return;
+      }
+      if(statusEl&&wanted)statusEl.textContent='Retrying…';
+      if(wanted)setTimeout(restart,300);
+    };
+    rec.onend=()=>{
+      clearSilenceTimer();
+      if(wanted&&!restarting)restart();
+    };
+    try{rec.start();}catch(e){if(wanted)setTimeout(restart,300);}
+  }
+
+  function start(newMode,callback,sEl,mBtn,hEl,lang){
+    stop();
+    if(INSECURE){
+      if(sEl)sEl.textContent='❌ Voice needs a secure address (https://) — it won\'t work opened as a local file';
       return false;
     }
-  }
-
-  async function start(newMode, cb, sEl, mBtn, hEl){
-    // switching mode or (re)starting: tear down any previous session first
-    stop();
-    mode = newMode; onFinalCb = cb; statusEl = sEl; micBtn = mBtn; heardEl = hEl;
-    if(!SR){ statusEl.textContent = 'Voice not supported in this browser (try Chrome)'; return false; }
-    if(startingNew) return false;
-    startingNew = true;
-    statusEl.textContent = 'Requesting microphone…'; statusEl.classList.add('live');
-    const ok = await ensureMicPermission();
-    startingNew = false;
-    if(!ok || mode !== newMode){ setUi(false); return false; } // mode may have changed while awaiting
-    wantListening = true;
-    errorStreak = 0;
-    setUi(true);
-    statusEl.textContent = 'Listening…'; statusEl.classList.add('live');
-    cycle();
+    if(!SR){
+      if(sEl)sEl.textContent='Voice not supported — use Chrome or Edge';
+      return false;
+    }
+    mode=newMode;cb=callback;statusEl=sEl;micBtn=mBtn;heardEl=hEl;
+    currentLang=lang||currentLang;
+    wanted=true;setUI(true);
+    if(statusEl){statusEl.textContent='Listening…';}
+    if(hEl){hEl.textContent='Speak a number…';}
+    make_and_start();
+    resetSilenceTimer();
     return true;
   }
-
-  function stop(){
-    wantListening = false;
-    clearTimeout(restartTimer);
-    restartTimer = null;
-    if(rec){ try{ rec.onend = null; rec.onresult = null; rec.onerror = null; rec.stop(); }catch(e){} }
-    rec = null;
-    setUi(false);
-    if(statusEl){ statusEl.textContent = 'Voice off'; statusEl.classList.remove('live'); }
-    if(heardEl) heardEl.textContent = '';
-    mode = null;
+  function setLang(l){
+    currentLang=l;
+    if(wanted)restart();
   }
-
-  function isListening(mForCheck){ return wantListening && mode === mForCheck; }
-
-  return { start, stop, isListening };
+  function getLang(){return currentLang;}
+  function stop(){
+    wanted=false;restarting=false;clearSilenceTimer();
+    try{if(rec)rec.abort();}catch(e){}
+    rec=null;setUI(false);
+    if(statusEl){statusEl.textContent='Tap mic to start';}
+    if(heardEl){heardEl.textContent='Speak a number…';}
+    mode=null;cb=null;
+  }
+  function isListening(m){return wanted&&mode===m;}
+  return{start,stop,isListening,setLang,getLang,get insecure(){return INSECURE;},get supported(){return !!SR;}};
 })();
 
-/* ---------------- Step navigation ---------------- */
-function goToStep(n){
-  if(typeof VoiceEngine !== 'undefined') VoiceEngine.stop();
-  currentStep = n;
-  for(let i=1;i<=4;i++){
-    document.getElementById('panel-'+i).style.display = (i===n)?'block':'none';
+/* ── NUMBER PARSING (robust, English + Bangla) ── */
+const NUM_MAP={
+  zero:0,oh:0,o:0,one:1,won:1,two:2,to:2,too:2,three:3,tree:3,
+  four:4,for:4,fore:4,five:5,six:6,seven:7,eight:8,ate:8,nine:9,ten:10,
+  eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,
+  seventeen:17,eighteen:18,nineteen:19,twenty:20,
+  'twenty one':21,'twenty-one':21,'twenty two':22,'twenty-two':22,
+  'twenty three':23,'twenty-three':23,'twenty four':24,'twenty-four':24,
+  'twenty five':25,'twenty-five':25,'twenty six':26,'twenty-six':26,
+  'twenty seven':27,'twenty-seven':27,'twenty eight':28,'twenty-eight':28,
+  'twenty nine':29,'twenty-nine':29,
+  thirty:30,'thirty one':31,'thirty two':32,'thirty three':33,
+  'thirty four':34,'thirty five':35,'thirty six':36,'thirty seven':37,
+  'thirty eight':38,'thirty nine':39,
+  forty:40,fifty:50
+};
+
+// Bengali number words, spoken form (covers 0–40 + 50, the field caps we use)
+const BN_NUM_MAP={
+  'শূন্য':0,'এক':1,'দুই':2,'দুয়ে':2,'তিন':3,'চার':4,'পাঁচ':5,'ছয়':6,'সাত':7,'আট':8,'নয়':9,'দশ':10,
+  'এগারো':11,'বারো':12,'তেরো':13,'চৌদ্দ':14,'পনেরো':15,'ষোলো':16,'সতেরো':17,'আঠারো':18,'উনিশ':19,'বিশ':20,
+  'একুশ':21,'বাইশ':22,'তেইশ':23,'চব্বিশ':24,'পঁচিশ':25,'ছাব্বিশ':26,'সাতাশ':27,'আটাশ':28,'ঊনত্রিশ':29,'ত্রিশ':30,
+  'একত্রিশ':31,'বত্রিশ':32,'তেত্রিশ':33,'চৌত্রিশ':34,'পঁয়ত্রিশ':35,'ছত্রিশ':36,'সাঁইত্রিশ':37,'আটত্রিশ':38,'উনচল্লিশ':39,'চল্লিশ':40,
+  'পঞ্চাশ':50
+};
+const BN_DIGITS='০১২৩৪৫৬৭৮৯';
+function bnDigitsToLatin(s){ return s.replace(/[০-৯]/g,d=>String(BN_DIGITS.indexOf(d))); }
+
+function parseNumber(raw){
+  if(!raw)return null;
+  let t=raw.toLowerCase().trim().replace(/[.,!?।]+$/g,'');
+  if(/^(next|skip|pass|go|পরে|স্কিপ|বাদ|যাও)\b/.test(t))return'NEXT';
+  t=bnDigitsToLatin(t);   // convert any Bengali digits (০-৯) to normal 0-9 first
+  // direct digits
+  if(/^\.\d+$/.test(t))return parseFloat('0'+t);
+  if(/^\d+(?:\.\d+)?$/.test(t))return parseFloat(t);
+  // "one point five" etc
+  const dec=t.match(/^(.+?)\s+point\s+(.+)$/);
+  if(dec){
+    const w=parseNumber(dec[1]),d=parseNumber(dec[2]);
+    if(typeof w==='number'&&typeof d==='number'&&d<10)return parseFloat(`${w}.${d}`);
   }
-  document.querySelectorAll('.step-tab').forEach(el=>{
-    const s = parseInt(el.dataset.step);
-    el.classList.toggle('active', s===n);
-    el.classList.toggle('done', s<n);
-  });
-  if(n===2) renderAttendanceTable();
-  if(n===3) renderMarksTable();
-  if(n===4) renderMarksheet();
+  // "point five"
+  const ponly=t.match(/^point\s+(.+)$/);
+  if(ponly){const d=parseNumber(ponly[1]);if(typeof d==='number')return parseFloat('0.'+d);}
+  // Bangla word lookup (longest match first, so "তেইশ" doesn't match inside a longer phrase wrongly)
+  for(const[phrase,val]of Object.entries(BN_NUM_MAP).sort((a,b)=>b[0].length-a[0].length)){
+    if(t===phrase||t.includes(phrase))return val;
+  }
+  // English word lookup (longest match first)
+  for(const[phrase,val]of Object.entries(NUM_MAP).sort((a,b)=>b[0].length-a[0].length)){
+    if(t===phrase||t.includes(phrase))return val;
+  }
+  // fallback: any digits in string
+  const m=t.match(/\d+(?:\.\d+)?/);return m?parseFloat(m[0]):null;
 }
-document.querySelectorAll('.step-tab').forEach(el=>{
-  el.addEventListener('click', ()=>{
-    const s = parseInt(el.dataset.step);
-    if(s===1 || students.length>0) goToStep(s);
+
+function voiceTokens(raw){
+  const chunks=bnDigitsToLatin(raw.toLowerCase())
+    .split(/\bnext\b|\bskip\b|\bthen\b|পরে|স্কিপ|বাদ|,|;|।/).map(s=>s.trim()).filter(Boolean);
+  const out=[];
+  for(const c of chunks){const n=parseNumber(c);if(n!==null)out.push(n);}
+  return out.length?out:[parseNumber(raw)];
+}
+
+/* ── VOICE LANGUAGE TOGGLE ── */
+const VOICE_LANGS=[{code:'en-US',label:'EN'},{code:'bn-BD',label:'বাংলা'}];
+function renderLangPills(elId){
+  const el=document.getElementById(elId);
+  if(!el)return;
+  el.innerHTML=VOICE_LANGS.map(l=>
+    `<span class="lpill ${l.code===voiceLang?'on':''}" onclick="setVoiceLang('${l.code}')">${l.label}</span>`
+  ).join('');
+}
+function setVoiceLang(code){
+  voiceLang=code;
+  saveState();
+  renderLangPills('attnLangRow');
+  renderLangPills('marksLangRow');
+  if(VoiceEngine.isListening('attn')||VoiceEngine.isListening('marks')){
+    VoiceEngine.setLang(code);
+  }
+}
+
+/* ── NAVIGATION ── */
+function goToStep(n){
+  VoiceEngine.stop();
+  currentStep=n;
+  for(let i=1;i<=4;i++){
+    document.getElementById('panel-'+i).style.display=(i===n?'block':'none');
+  }
+  document.querySelectorAll('.bnav-item').forEach(el=>{
+    const s=parseInt(el.dataset.step);
+    el.classList.toggle('active',s===n);
+    el.classList.toggle('done',s<n);
+  });
+  if(n===2)renderAttendance();
+  if(n===3){renderMarkField();renderMarks();}
+  if(n===4)renderMarksheet();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.bnav-item').forEach(el=>{
+  el.addEventListener('click',()=>{
+    const s=parseInt(el.dataset.step);
+    if(s===1||students.length>0)goToStep(s);
   });
 });
 
-/* ---------------- Step 1: Student Sheet ---------------- */
-const dropzone = document.getElementById('dropzone');
-const fileInput = document.getElementById('fileInput');
-document.getElementById('pickFileBtn').addEventListener('click', ()=>fileInput.click());
-fileInput.addEventListener('change', e=>{ if(e.target.files[0]) handlePdf(e.target.files[0]); });
-['dragenter','dragover'].forEach(ev=>dropzone.addEventListener(ev, e=>{ e.preventDefault(); dropzone.classList.add('drag'); }));
-['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev, e=>{ e.preventDefault(); dropzone.classList.remove('drag'); }));
-dropzone.addEventListener('drop', e=>{
-  const f = e.dataTransfer.files[0];
-  if(f && f.type==='application/pdf') handlePdf(f);
-});
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+/* ── STEP 1: PDF & ROSTER ── */
+const dropzone=document.getElementById('dropzone');
+const fileInput=document.getElementById('fileInput');
+document.getElementById('pickFileBtn').addEventListener('click',()=>fileInput.click());
+fileInput.addEventListener('change',e=>{if(e.target.files[0])handlePdf(e.target.files[0]);});
+['dragenter','dragover'].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.remove('drag');}));
+dropzone.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')handlePdf(f);});
 
 async function handlePdf(file){
-  const statusEl = document.getElementById('fileStatus');
-  statusEl.textContent = 'Reading ' + file.name + ' …';
+  const st=document.getElementById('fileStatus');
+  st.textContent='Reading '+file.name+' …';
   try{
-    const buf = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({data: buf}).promise;
-    let fullText = '';
-    for(let p=1; p<=pdf.numPages; p++){
-      const page = await pdf.getPage(p);
-      const content = await page.getTextContent();
-      const lines = {};
+    const buf=await file.arrayBuffer();
+    const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+    let fullText='';
+    for(let p=1;p<=pdf.numPages;p++){
+      const page=await pdf.getPage(p);
+      const content=await page.getTextContent();
+      const lines={};
       content.items.forEach(it=>{
-        const y = Math.round(it.transform[5]);
-        lines[y] = (lines[y]||'') + it.str + ' ';
+        const y=Math.round(it.transform[5]);
+        lines[y]=(lines[y]||'')+it.str+' ';
       });
-      const ys = Object.keys(lines).map(Number).sort((a,b)=>b-a);
-      ys.forEach(y=> fullText += lines[y].trim() + '\n');
+      const ys=Object.keys(lines).map(Number).sort((a,b)=>b-a);
+      ys.forEach(y=>fullText+=lines[y].trim()+'\n');
     }
     parseRosterText(fullText);
-    statusEl.textContent = `Loaded ${file.name} — extracted ${students.length} student(s). Review & edit below.`;
+    st.textContent=`Loaded ${file.name} — ${students.length} student(s) extracted. Review below.`;
   }catch(err){
+    st.textContent='Could not read PDF. Add rows manually.';
     console.error(err);
-    statusEl.textContent = 'Could not read that PDF (' + err.message + '). Add rows manually below.';
   }
-  saveState();
-  renderRosterTable();
+  saveState();renderRosterTable();
 }
 
 function parseRosterText(text){
-  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
-  const found = [];
-  const seenIds = new Set();
-
-  // ---- labeled header fields (Trimester / Program / Section / Course Code / Course Title / Batch) ----
-  const grab = (label)=>{
-    const re = new RegExp('(?:' + label + ')\\s*[:\\-]?\\s*([^\\n]+)', 'i');
-    const m = text.match(re);
-    return (m && m[1]) ? m[1].trim().replace(/\s{2,}/g,' ') : '';
-  };
-  const courseTitle = grab('course\\s*title|course\\s*name');
-  const courseCode = grab('course\\s*code');
-  const section = grab('section');
-  const program = grab('program');
-  const batchLabel = grab('batch\\s*(?:no\\.?|number)?');
-
-  if(courseTitle) courseInfo.course = courseTitle.slice(0,80);
-  if(courseCode) courseInfo.code = courseCode.split(/\s{2,}|\n/)[0].trim().slice(0,20);
-  // prefer an explicit "Batch" field; otherwise Section (e.g. CSE-33-D-A) doubles as batch/section id
-  if(batchLabel) courseInfo.batch = batchLabel.split(/\s{2,}/)[0].trim().slice(0,30);
-  else if(section) courseInfo.batch = section.split(/\s{2,}/)[0].trim().slice(0,30);
-  else if(program) courseInfo.batch = program.split(/\s{2,}/)[0].trim().slice(0,30);
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const found=[];const seenIds=new Set();
+  const grab=label=>{const re=new RegExp('(?:'+label+')\\s*[:\\-]?\\s*([^\\n]+)','i');const m=text.match(re);return(m&&m[1])?m[1].trim().replace(/\s{2,}/g,' '):''};
+  const courseTitle=grab('course\\s*title|course\\s*name');
+  const courseCode=grab('course\\s*code');
+  const section=grab('section');
+  const program=grab('program');
+  const batchLabel=grab('batch\\s*(?:no\\.?|number)?');
+  if(courseTitle)courseInfo.course=courseTitle.slice(0,80);
+  if(courseCode)courseInfo.code=courseCode.split(/\s{2,}|\n/)[0].trim().slice(0,20);
+  if(batchLabel)courseInfo.batch=batchLabel.split(/\s{2,}/)[0].trim().slice(0,30);
+  else if(section)courseInfo.batch=section.split(/\s{2,}/)[0].trim().slice(0,30);
+  else if(program)courseInfo.batch=program.split(/\s{2,}/)[0].trim().slice(0,30);
   updateCourseTag();
-
-  // ---- table rows: "<SL> <ID (letters + number groups)> <Name>" ----
-  // e.g. "12 CSE 033 08378 Taisaw Chak"  or  "12 20221-15-078 Jane Doe"
-  const rowRe = /^(\d{1,3})\s+([A-Za-z]{2,8}(?:\s+\d{1,6}){1,3}|\d{4,12})\s+(.+)$/;
-  const skipRe = /^(course|batch|semester|dept|department|sl\.?\s*no|serial|trimester|program|section|print\s*date|web\s*generated|page\s*\d|\d+\s*of\s*\d+)/i;
-
+  const rowRe=/^(\d{1,3})\s+([A-Za-z]{2,8}(?:\s+\d{1,6}){1,3}|\d{4,12})\s+(.+)$/;
+  const skipRe=/^(course|batch|semester|dept|department|sl\.?\s*no|serial|trimester|program|section|print\s*date|web\s*generated|page\s*\d|\d+\s*of\s*\d+)/i;
   lines.forEach(line=>{
-    if(skipRe.test(line)) return;
-    const m = line.match(rowRe);
-    if(!m) return;
-    const sid = m[2].replace(/\s{2,}/g,' ').trim();
-    // strip stray trailing attendance-column digits (e.g. "Jannatul Naima 1 2 3") from name
-    let name = m[3].replace(/\s{2,}/g,' ').trim();
-    name = name.replace(/(\s+\d{1,2}){2,}\s*$/,'').trim();
-    name = name.replace(/[|,;]+$/,'').trim();
-    if(name.length < 2) return;
-    if(seenIds.has(sid)) return; // dedupe repeated header/rows across pages
-    seenIds.add(sid);
-    found.push({ sid, name });
+    if(skipRe.test(line))return;
+    const m=line.match(rowRe);if(!m)return;
+    const sid=m[2].replace(/\s{2,}/g,' ').trim();
+    let name=m[3].replace(/\s{2,}/g,' ').trim();
+    name=name.replace(/(\s+\d{1,2}){2,}\s*$/,'').trim();
+    name=name.replace(/[|,;]+$/,'').trim();
+    if(name.length<2||seenIds.has(sid))return;
+    seenIds.add(sid);found.push({sid,name});
   });
-
-  // fallback: looser single-token ID pattern for other roster layouts
-  if(found.length === 0){
-    const idRe = /\b(\d{5,12}|[A-Z]{1,4}\d{3,10})\b/;
-    const nameRe = /[A-Za-z][A-Za-z.\-'’ ]{2,45}[A-Za-z]/;
+  if(found.length===0){
+    const idRe=/\b(\d{5,12}|[A-Z]{1,4}\d{3,10})\b/;
+    const nameRe=/[A-Za-z][A-Za-z.\-'' ]{2,45}[A-Za-z]/;
     lines.forEach(line=>{
-      if(skipRe.test(line)) return;
-      const idM = line.match(idRe);
-      if(!idM) return;
-      let rest = line.replace(idM[0], ' ').replace(/[|,;]/g,' ').replace(/\s{2,}/g,' ').trim();
-      const nameM = rest.match(nameRe);
-      let name = nameM ? nameM[0].trim() : rest.trim();
-      name = name.replace(/^\d+\.?\s*/,'').trim();
-      if(name.length < 2 || seenIds.has(idM[0])) return;
-      seenIds.add(idM[0]);
-      found.push({ sid: idM[0], name });
+      if(skipRe.test(line))return;
+      const idM=line.match(idRe);if(!idM)return;
+      let rest=line.replace(idM[0],' ').replace(/[|,;]/g,' ').replace(/\s{2,}/g,' ').trim();
+      const nameM=rest.match(nameRe);
+      let name=nameM?nameM[0].trim():rest.trim();
+      name=name.replace(/^\d+\.?\s*/,'').trim();
+      if(name.length<2||seenIds.has(idM[0]))return;
+      seenIds.add(idM[0]);found.push({sid:idM[0],name});
     });
   }
-
   if(found.length){
-    students = found.map((f,i)=>({
-      id: 'S'+i, sid: f.sid, name: f.name,
-      batch: courseInfo.batch || '', course: courseInfo.code || ''
-    }));
+    students=found.map((f,i)=>({id:'S'+i,sid:f.sid,name:f.name,batch:courseInfo.batch||'',course:courseInfo.code||''}));
   }
+}
+
+function updateCourseTag(){
+  document.getElementById('courseTag').textContent=
+    (courseInfo.course||'—').slice(0,22)+'\n'+((courseInfo.code||'—')+' · '+(courseInfo.batch||'—'));
 }
 
 function renderRosterTable(){
-  const wrap = document.getElementById('rosterTableWrap');
+  const wrap=document.getElementById('rosterTableWrap');
   if(students.length===0){
-    wrap.innerHTML = `<div class="empty"><div class="big">No students yet</div>Upload a PDF above, or add rows manually.</div>`;
-    document.getElementById('toStep2Btn').disabled = true;
-    document.getElementById('rosterCount').textContent = '';
+    wrap.innerHTML='<div class="empty"><div class="big">No students yet</div>Upload a PDF or add rows manually.</div>';
+    document.getElementById('toStep2Btn').disabled=true;
+    document.getElementById('rosterCount').textContent='';
     return;
   }
-  let rows = students.map((s,i)=>`
-    <tr>
-      <td style="width:36px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;">${i+1}</td>
-      <td><input class="cell" data-i="${i}" data-f="sid" value="${escapeHtml(s.sid)}"></td>
-      <td><input class="cell name-cell" data-i="${i}" data-f="name" value="${escapeHtml(s.name)}"></td>
-      <td><input class="cell" data-i="${i}" data-f="batch" value="${escapeHtml(s.batch)}"></td>
-      <td><input class="cell" data-i="${i}" data-f="course" value="${escapeHtml(s.course)}"></td>
-      <td style="width:40px;"><button class="btn small outline no-print" data-del="${i}">✕</button></td>
-    </tr>`).join('');
-  wrap.innerHTML = `<div class="tbl-wrap"><table>
-    <thead><tr><th>#</th><th>Student ID</th><th>Name</th><th>Batch</th><th>Course Code</th><th></th></tr></thead>
-    <tbody>${rows}</tbody></table></div>`;
-
+  const rows=students.map((s,i)=>`<tr>
+    <td style="width:30px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;font-size:.75rem">${i+1}</td>
+    <td><input class="cell" data-i="${i}" data-f="sid" value="${escapeHtml(s.sid)}" style="font-size:.8rem"></td>
+    <td><input class="cell name-cell" data-i="${i}" data-f="name" value="${escapeHtml(s.name)}"></td>
+    <td style="width:34px"><button class="btn small outline no-print" data-del="${i}" style="padding:6px 8px;font-size:.8rem">✕</button></td>
+  </tr>`).join('');
+  wrap.innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Student ID</th><th>Name</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`;
   wrap.querySelectorAll('input.cell').forEach(inp=>{
-    inp.addEventListener('input', e=>{
-      const i = parseInt(inp.dataset.i), f = inp.dataset.f;
-      students[i][f] = inp.value;
-      saveState();
-    });
+    inp.addEventListener('input',()=>{students[+inp.dataset.i][inp.dataset.f]=inp.value;saveState();});
   });
   wrap.querySelectorAll('[data-del]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      students.splice(parseInt(btn.dataset.del),1);
-      saveState(); renderRosterTable();
-    });
+    btn.addEventListener('click',()=>{students.splice(+btn.dataset.del,1);saveState();renderRosterTable();});
   });
-
-  document.getElementById('rosterCount').textContent = `${students.length} student(s)`;
-  document.getElementById('toStep2Btn').disabled = false;
+  document.getElementById('rosterCount').textContent=`${students.length} student(s)`;
+  document.getElementById('toStep2Btn').disabled=false;
 }
 
-document.getElementById('addRowBtn').addEventListener('click', ()=>{
-  students.push({ id:'S'+students.length+'-'+Date.now(), sid:'', name:'', batch: courseInfo.batch||'', course: courseInfo.code||''});
-  saveState(); renderRosterTable();
+document.getElementById('addRowBtn').addEventListener('click',()=>{
+  students.push({id:'S'+students.length+'-'+Date.now(),sid:'',name:'',batch:courseInfo.batch||'',course:courseInfo.code||''});
+  saveState();renderRosterTable();
 });
-document.getElementById('toStep2Btn').addEventListener('click', ()=>goToStep(2));
+document.getElementById('toStep2Btn').addEventListener('click',()=>goToStep(2));
 
-function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
-/* ---------------- Step 2: Attendance ---------------- */
-const totalClassesInput = document.getElementById('totalClassesInput');
-totalClassesInput.addEventListener('input', ()=>{
-  courseInfo.totalClasses = totalClassesInput.value;
-  saveState();
-  renderAttendanceTable();
-});
-function refreshTotalClassesUI(){
-  totalClassesInput.value = courseInfo.totalClasses || '';
-  const hintEl = document.getElementById('totalClassesHint');
-  hintEl.textContent = courseInfo.totalClasses ? '' : 'Set this first — marks/10 can\'t be calculated without it.';
+/* ── STEP 2: ATTENDANCE ── */
+function attPct(present){
+  if(!totalClasses||present===undefined||present===null||present==='')return null;
+  return Math.max(0,Math.min(100,(Number(present)/totalClasses)*100));
+}
+function attMarks(pct){
+  if(pct===null)return 0;
+  if(pct>=90)return 10;if(pct>=85)return 9;if(pct>=80)return 8;
+  if(pct>=75)return 7;if(pct>=70)return 6;if(pct>=65)return 5;
+  if(pct>=60)return 4;if(pct>=55)return 3;if(pct>=50)return 2;
+  return 0;
 }
 
-function renderAttendanceTable(){
-  refreshTotalClassesUI();
-  const wrap = document.getElementById('attnTableWrap');
-  if(students.length===0){ wrap.innerHTML = `<div class="empty">No students loaded.</div>`; return; }
-  const total = parseFloat(courseInfo.totalClasses);
-  let rows = students.map((s,i)=>{
-    const rec = attendance[s.id] || {};
-    const info = getAttendanceMark(s.id);
-    const pctText = info.pct!==undefined ? info.pct.toFixed(1)+'%' : '—';
-    return `<tr id="attn-row-${i}" class="${i===attnActiveIdx?'active-row':''}">
-      <td style="width:36px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;">${i+1}</td>
-      <td style="font-family:'JetBrains Mono',monospace;">${escapeHtml(s.sid)}</td>
+function renderAttendance(){
+  const tc=document.getElementById('totalClassesInput');
+  if(tc)tc.value=totalClasses||'';
+  if(students.length===0){
+    document.getElementById('attnCards').innerHTML='<div class="empty">No students loaded.</div>';
+    document.getElementById('attnTableWrap').innerHTML='';
+    return;
+  }
+  updateAttnSummary();
+
+  // Mobile cards
+  document.getElementById('attnCards').innerHTML=students.map((s,i)=>{
+    const p=attendance[s.id];
+    const pct=attPct(p);
+    const am=attMarks(pct);
+    return `<div class="acard ${i===attnActiveIdx?'active-card':''}" id="ac-${i}" onclick="tapAttn(${i})">
+      <div class="acard-info">
+        <div class="acard-name">${escapeHtml(s.name)}</div>
+        <div class="acard-id">${escapeHtml(s.sid)}</div>
+        <div class="acard-pct">${pct===null?'—':pct.toFixed(1)+'% · '+am+'/10 marks'}</div>
+      </div>
+      <div class="acard-input">
+        <input type="number" min="0" max="${totalClasses||999}" step="1" value="${p!==undefined?p:''}" placeholder="0"
+          data-i="${i}" class="attn-inp"
+          inputmode="numeric" onchange="setAttnVal(${i},this.value)" oninput="setAttnVal(${i},this.value)">
+      </div>
+    </div>`;
+  }).join('');
+
+  // Desktop table
+  const rows=students.map((s,i)=>{
+    const p=attendance[s.id];const pct=attPct(p);const am=attMarks(pct);
+    return `<tr id="atr-${i}" class="${i===attnActiveIdx?'active-row':''}">
+      <td>${i+1}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:.78rem">${escapeHtml(s.sid)}</td>
       <td>${escapeHtml(s.name)}</td>
-      <td class="num-cell" style="width:110px;">
-        <input class="cell attn-present" data-i="${i}" type="number" min="0" ${total?('max="'+total+'"'):''} step="1"
-          value="${rec.present!==undefined && rec.present!==null ? rec.present : ''}" placeholder="present">
-      </td>
-      <td style="width:80px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;">${pctText}</td>
-      <td class="num-cell" style="width:110px;">
-        <input class="cell attn-marks" data-i="${i}" type="number" min="0" max="10" step="1"
-          value="${info.mark!==undefined ? info.mark : ''}" placeholder="/10"
-          title="${info.isOverride ? 'Manually overridden' : 'Auto-calculated — edit to override'}"
-          style="${info.isOverride ? 'border-color:var(--gold); background:var(--gold-soft);' : ''}">
-      </td>
-      <td style="width:60px;">${info.isOverride ? `<button class="btn small outline no-print" data-reset="${i}" title="Reset to auto-calculated">↺</button>` : ''}</td>
+      <td class="num-cell"><input class="cell attn-inp num-wide" data-i="${i}" type="number" min="0" max="${totalClasses||999}" step="1" value="${p!==undefined?p:''}" placeholder="Present" inputmode="numeric" onchange="setAttnVal(${i},this.value)" oninput="setAttnVal(${i},this.value)"></td>
+      <td>${pct===null?'—':pct.toFixed(1)+'%'}</td>
+      <td><strong>${pct===null?'—':am+'/10'}</strong></td>
     </tr>`;
   }).join('');
-  wrap.innerHTML = `<table><thead><tr><th>#</th><th>ID</th><th>Name</th><th>Classes Present</th><th>Attendance %</th><th>Marks /10</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+  document.getElementById('attnTableWrap').innerHTML=`<table><thead><tr><th>#</th><th>ID</th><th>Name</th><th>Present/${totalClasses||'?'}</th><th>%</th><th>Marks</th></tr></thead><tbody>${rows}</tbody></table>`;
 
-  wrap.querySelectorAll('.attn-present').forEach(inp=>{
-    inp.addEventListener('input', ()=>{
-      const i = parseInt(inp.dataset.i);
-      const sid = students[i].id;
-      attendance[sid] = attendance[sid] || {};
-      attendance[sid].present = inp.value===''? undefined : parseFloat(inp.value);
-      saveState();
-      renderAttendanceTable();
-      setAttnActive(i, false);
-    });
-    inp.addEventListener('keydown', e=>{
-      if(e.key==='Enter'){
-        e.preventDefault();
-        const i = parseInt(inp.dataset.i);
-        setAttnActive(Math.min(i+1, students.length-1));
-      } else if(e.key==='ArrowDown'){
-        e.preventDefault();
-        setAttnActive(Math.min(parseInt(inp.dataset.i)+1, students.length-1));
-      } else if(e.key==='ArrowUp'){
-        e.preventDefault();
-        setAttnActive(Math.max(parseInt(inp.dataset.i)-1, 0));
-      }
-    });
-    inp.addEventListener('focus', ()=> setAttnActive(parseInt(inp.dataset.i), false));
-  });
-  wrap.querySelectorAll('.attn-marks').forEach(inp=>{
-    inp.addEventListener('input', ()=>{
-      const i = parseInt(inp.dataset.i);
-      const sid = students[i].id;
-      attendance[sid] = attendance[sid] || {};
-      attendance[sid].override = inp.value===''? undefined : Math.max(0, Math.min(10, parseFloat(inp.value)));
-      saveState();
-      renderAttendanceTable();
-    });
-  });
-  wrap.querySelectorAll('[data-reset]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const i = parseInt(btn.dataset.reset);
-      const sid = students[i].id;
-      if(attendance[sid]) attendance[sid].override = undefined;
-      saveState();
-      renderAttendanceTable();
+  // keyboard nav on desktop inputs
+  document.querySelectorAll('#attnTableWrap .attn-inp').forEach(inp=>{
+    inp.addEventListener('keydown',e=>{
+      const i=+inp.dataset.i;
+      if(e.key==='Enter'||e.key==='ArrowDown'){e.preventDefault();tapAttn(Math.min(i+1,students.length-1),true);}
+      else if(e.key==='ArrowUp'){e.preventDefault();tapAttn(Math.max(i-1,0),true);}
     });
   });
 }
-function setAttnActive(i, focusInput=true){
-  attnActiveIdx = i;
-  document.querySelectorAll('#attnTableWrap tr').forEach(r=>r.classList.remove('active-row'));
-  const row = document.getElementById('attn-row-'+i);
-  if(row){
-    row.classList.add('active-row');
-    row.scrollIntoView({block:'nearest'});
-    if(focusInput){
-      const inp = row.querySelector('.attn-present');
-      if(inp){ inp.focus(); inp.select(); }
-    }
-  }
+
+function setAttnVal(i,v){
+  const val=v===''?undefined:Math.max(0,Math.min(totalClasses||999,parseInt(v)||0));
+  attendance[students[i].id]=val;
+  saveState();
+  // update just the percentage display without full re-render
+  const p=val;const pct=attPct(p);const am=attMarks(pct);
+  const pctStr=pct===null?'—':pct.toFixed(1)+'%';
+  const amStr=pct===null?'—':am+'/10';
+  const acard=document.getElementById('ac-'+i);
+  if(acard){const pd=acard.querySelector('.acard-pct');if(pd)pd.textContent=pctStr+' · '+amStr+' marks';}
+  updateAttnSummary();
 }
 
-const attnMicBtn = document.getElementById('attnMicBtn');
-const attnStatus = document.getElementById('attnStatus');
-const attnHeard = document.getElementById('attnHeard');
-attnMicBtn.addEventListener('click', ()=>{
-  if(VoiceEngine.isListening('attn')){ VoiceEngine.stop(); return; }
-  if(students.length===0) return;
-  VoiceEngine.start('attn', handleAttnVoice, attnStatus, attnMicBtn, attnHeard);
+function tapAttn(i,focus=false){
+  attnActiveIdx=i;
+  document.querySelectorAll('.acard').forEach((c,j)=>c.classList.toggle('active-card',j===i));
+  document.querySelectorAll('#attnTableWrap tr').forEach((r,j)=>r.classList.toggle('active-row',j===i));
+  const card=document.getElementById('ac-'+i);
+  if(card){card.scrollIntoView({block:'nearest',behavior:'smooth'});}
+  const row=document.getElementById('atr-'+i);
+  if(row){row.scrollIntoView({block:'nearest'});if(focus){const inp=row.querySelector('input');if(inp){inp.focus();inp.select();}}}
+}
+
+function updateAttnSummary(){
+  const vals=students.map(s=>attPct(attendance[s.id])).filter(v=>v!==null);
+  const avg=vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):'—';
+  const complete=students.filter(s=>attendance[s.id]!==undefined).length;
+  document.getElementById('attnSummary').innerHTML=`<div class="attn-summary">
+    <div class="attn-card"><b>${totalClasses||'—'}</b><small>Classes held</small></div>
+    <div class="attn-card"><b>${complete}/${students.length}</b><small>Entered</small></div>
+    <div class="attn-card"><b>${avg}${avg==='—'?'':'%'}</b><small>Avg attendance</small></div>
+  </div>`;
+}
+
+document.getElementById('applyClassesBtn').addEventListener('click',()=>{
+  const n=parseInt(document.getElementById('totalClassesInput').value,10);
+  if(!n||n<1){alert('Enter total classes held.');return;}
+  totalClasses=n;saveState();renderAttendance();
+});
+document.getElementById('totalClassesInput').addEventListener('change',()=>{
+  const n=parseInt(document.getElementById('totalClassesInput').value,10);
+  if(n>0){totalClasses=n;saveState();renderAttendance();}
+});
+
+// Attendance voice
+document.getElementById('attnMicBtn').addEventListener('click',()=>{
+  if(VoiceEngine.isListening('attn')){VoiceEngine.stop();return;}
+  if(!students.length)return;
+  VoiceEngine.start('attn',handleAttnVoice,
+    document.getElementById('attnStatus'),
+    document.getElementById('attnMicBtn'),
+    document.getElementById('attnHeard'),
+    voiceLang);
 });
 function handleAttnVoice(transcript){
-  const val = wordsToNumber(transcript);
-  if(val===null) return;
-  if(students.length===0) return;
-  const s = students[attnActiveIdx];
-  if(val!=='NEXT'){
-    const total = parseFloat(courseInfo.totalClasses);
-    const cap = total>0 ? total : 999;
-    attendance[s.id] = attendance[s.id] || {};
-    attendance[s.id].present = Math.max(0, Math.min(cap, val));
-    saveState();
+  if(!totalClasses){document.getElementById('attnStatus').textContent='Set total classes first!';return;}
+  const vals=voiceTokens(transcript);
+  let moved=false;
+  for(const val of vals){
+    if(val==='NEXT'){attnActiveIdx=Math.min(attnActiveIdx+1,students.length-1);continue;}
+    if(typeof val!=='number')continue;
+    const s=students[attnActiveIdx];
+    const v=Math.max(0,Math.min(totalClasses,Math.round(val)));
+    attendance[s.id]=v;
+    // update input visually
+    document.querySelectorAll(`.attn-inp[data-i="${attnActiveIdx}"]`).forEach(inp=>inp.value=v);
+    setAttnVal(attnActiveIdx,v);
+    attnActiveIdx=Math.min(attnActiveIdx+1,students.length-1);
+    moved=true;
   }
-  renderAttendanceTable();
-  setAttnActive(Math.min(attnActiveIdx+1, students.length-1), false);
-  if(attnStatus) attnStatus.textContent = 'Listening…';
+  if(moved){saveState();tapAttn(attnActiveIdx);}
+  document.getElementById('attnStatus').textContent='Listening…';
 }
 
-document.getElementById('backTo1Btn').addEventListener('click', ()=>goToStep(1));
-document.getElementById('toStep3Btn').addEventListener('click', ()=>goToStep(3));
+document.getElementById('backTo1Btn').addEventListener('click',()=>goToStep(1));
+document.getElementById('toStep3Btn').addEventListener('click',()=>goToStep(3));
 
-/* ---------------- Step 3: Marks ---------------- */
-function renderMarksTable(){
-  const wrap = document.getElementById('marksTableWrap');
-  if(students.length===0){ wrap.innerHTML = `<div class="empty">No students loaded.</div>`; return; }
-  let rows = students.map((s,i)=>{
-    const m = marks[s.id] || {};
-    const cell = (f)=>`<td class="num-cell"><input class="cell marks-input" data-i="${i}" data-f="${f}" type="number" min="0" max="${FIELD_CAPS[f]}" step="0.5" value="${m[f]!==undefined?m[f]:''}"></td>`;
-    return `<tr id="marks-row-${i}" class="${i===marksActiveIdx?'active-row':''}">
-      <td style="width:34px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;">${i+1}</td>
+/* ── STEP 3: MARKS ── */
+function renderMarkField(){
+  document.getElementById('fieldPills').innerHTML=Object.entries(FIELD_LABELS).map(([k,l])=>
+    `<span class="fpill ${k===activeMarkField?'on':''}" onclick="setMarkField('${k}')">${l}</span>`
+  ).join('');
+}
+function setMarkField(k){activeMarkField=k;renderMarkField();}
+
+function getMarkVal(sid,f){const m=marks[sid];return m&&m[f]!==undefined?m[f]:'';}
+function rowTotal(sid){
+  const m=marks[sid]||{};
+  return (m.ct1||0)+(m.ct2||0)+(m.mid||0)+(m.final||0)+(m.asgn1||0)+(m.asgn2||0);
+}
+
+function renderMarks(){
+  if(students.length===0){
+    document.getElementById('marksCards').innerHTML='<div class="empty">No students loaded.</div>';
+    document.getElementById('marksTableWrap').innerHTML='';
+    return;
+  }
+
+  // Mobile cards
+  document.getElementById('marksCards').innerHTML=students.map((s,i)=>{
+    const t=rowTotal(s.id);
+    return `<div class="mcard ${i===marksActiveIdx?'active-card':''}" id="mc-${i}" onclick="tapMarks(${i})">
+      <div class="mcard-head">
+        <div>
+          <div class="mcard-name">${escapeHtml(s.name)}</div>
+          <div class="mcard-id">${escapeHtml(s.sid)}</div>
+        </div>
+        <div class="mcard-total">${t?t+'/100':'—'}</div>
+      </div>
+      <div class="mcard-fields">
+        ${Object.entries(FIELD_LABELS).map(([f,l])=>`
+          <div class="mcard-field">
+            <label>${l}</label>
+            <input type="number" min="0" max="${FIELD_CAPS[f]}" step="0.5"
+              value="${getMarkVal(s.id,f)}" data-i="${i}" data-f="${f}" data-sid="${s.id}"
+              inputmode="decimal" onchange="setMarkVal('${s.id}',${i},'${f}',this.value)"
+              onclick="tapMarks(${i})">
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Desktop table
+  const rows=students.map((s,i)=>{
+    const cell=f=>`<td class="num-cell"><input class="cell" data-i="${i}" data-f="${f}" data-sid="${s.id}" type="number" min="0" max="${FIELD_CAPS[f]}" step="0.5" value="${getMarkVal(s.id,f)}" inputmode="decimal" onchange="setMarkVal('${s.id}',${i},'${f}',this.value)"></td>`;
+    const t=rowTotal(s.id);
+    return `<tr id="mr-${i}" class="${i===marksActiveIdx?'active-row':''}">
+      <td style="width:28px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;font-size:.72rem">${i+1}</td>
+      <td style="font-family:'JetBrains Mono',monospace;font-size:.75rem">${escapeHtml(s.sid)}</td>
       <td>${escapeHtml(s.name)}</td>
-      ${cell('ct1')}${cell('ct2')}${cell('mid')}${cell('final')}${cell('asgn1')}${cell('asgn2')}
+      ${cell('ct1')}${cell('ct2')}${cell('asgn1')}${cell('asgn2')}${cell('mid')}${cell('final')}
+      <td style="font-weight:700;color:var(--chalk);font-family:'Fraunces',serif">${t||'—'}</td>
     </tr>`;
   }).join('');
-  wrap.innerHTML = `<table><thead><tr>
-    <th>#</th><th>Name</th><th>CT1</th><th>CT2</th><th>Mid</th><th>Final</th><th>Asg1</th><th>Asg2</th>
+  document.getElementById('marksTableWrap').innerHTML=`<table><thead><tr>
+    <th>#</th><th>ID</th><th>Name</th><th>CT1</th><th>CT2</th><th>A1</th><th>A2</th><th>Mid</th><th>Final</th><th>Total</th>
   </tr></thead><tbody>${rows}</tbody></table>`;
 
-  wrap.querySelectorAll('.marks-input').forEach(inp=>{
-    inp.addEventListener('input', ()=>{
-      const i = parseInt(inp.dataset.i), f = inp.dataset.f;
-      const sid = students[i].id;
-      marks[sid] = marks[sid] || {};
-      marks[sid][f] = inp.value===''? undefined : parseFloat(inp.value);
-      saveState();
+  // Desktop keyboard nav
+  document.querySelectorAll('#marksTableWrap input').forEach(inp=>{
+    inp.addEventListener('keydown',e=>{
+      const i=+inp.dataset.i,f=inp.dataset.f;
+      if(e.key==='Enter'||e.key==='ArrowDown'){e.preventDefault();tapMarks(Math.min(i+1,students.length-1),f,true);}
+      else if(e.key==='ArrowUp'){e.preventDefault();tapMarks(Math.max(i-1,0),f,true);}
     });
-    inp.addEventListener('keydown', e=>{
-      const i = parseInt(inp.dataset.i), f = inp.dataset.f;
-      if(e.key==='Enter'){
-        e.preventDefault();
-        setMarksActive(Math.min(i+1, students.length-1));
-      } else if(e.key==='ArrowDown'){
-        e.preventDefault();
-        const ni = Math.min(i+1, students.length-1);
-        marksActiveIdx = ni;
-        const next = wrap.querySelector(`.marks-input[data-i="${ni}"][data-f="${f}"]`);
-        if(next){ next.focus(); next.select(); }
-        highlightMarksRow(ni);
-      } else if(e.key==='ArrowUp'){
-        e.preventDefault();
-        const ni = Math.max(i-1, 0);
-        marksActiveIdx = ni;
-        const prev = wrap.querySelector(`.marks-input[data-i="${ni}"][data-f="${f}"]`);
-        if(prev){ prev.focus(); prev.select(); }
-        highlightMarksRow(ni);
-      }
-    });
-    inp.addEventListener('focus', ()=> setMarksActive(parseInt(inp.dataset.i), false));
+    inp.addEventListener('focus',()=>tapMarks(+inp.dataset.i,null,false));
   });
 }
-function setMarksActive(i, focusInput=true){
-  marksActiveIdx = i;
-  document.querySelectorAll('#marksTableWrap tr').forEach(r=>r.classList.remove('active-row'));
-  const row = document.getElementById('marks-row-'+i);
-  if(row){
-    row.classList.add('active-row');
-    row.scrollIntoView({block:'nearest'});
-    if(focusInput){
-      const field = document.getElementById('fieldSelect').value;
-      const inp = row.querySelector(`input[data-f="${field}"]`);
-      if(inp){ inp.focus(); inp.select(); }
-    }
-  }
-}
-function highlightMarksRow(i){
-  document.querySelectorAll('#marksTableWrap tr').forEach(r=>r.classList.remove('active-row'));
-  const row = document.getElementById('marks-row-'+i);
-  if(row){ row.classList.add('active-row'); row.scrollIntoView({block:'nearest'}); }
+
+function setMarkVal(sid,rowIdx,f,v){
+  marks[sid]=marks[sid]||{};
+  marks[sid][f]=v===''?undefined:Math.max(0,Math.min(FIELD_CAPS[f],parseFloat(v)||0));
+  saveState();
+  // update total display
+  const t=rowTotal(sid);
+  const mc=document.getElementById('mc-'+rowIdx);
+  if(mc){const td=mc.querySelector('.mcard-total');if(td)td.textContent=t?t+'/100':'—';}
+  const mr=document.getElementById('mr-'+rowIdx);
+  if(mr){const tds=mr.querySelectorAll('td');const last=tds[tds.length-1];if(last)last.textContent=t||'—';}
 }
 
-const marksMicBtn = document.getElementById('marksMicBtn');
-const marksStatus = document.getElementById('marksStatus');
-const marksHeard = document.getElementById('marksHeard');
-marksMicBtn.addEventListener('click', ()=>{
-  if(VoiceEngine.isListening('marks')){ VoiceEngine.stop(); return; }
-  if(students.length===0) return;
-  VoiceEngine.start('marks', handleMarksVoice, marksStatus, marksMicBtn, marksHeard);
-  const field = document.getElementById('fieldSelect').selectedOptions[0].text;
-  marksStatus.textContent = 'Listening — ' + field; marksStatus.classList.add('live');
-});
-document.getElementById('fieldSelect').addEventListener('change', ()=>{
-  if(VoiceEngine.isListening('marks')){
-    const field = document.getElementById('fieldSelect').selectedOptions[0].text;
-    marksStatus.textContent = 'Listening — ' + field;
+function tapMarks(i,f=null,focus=false){
+  marksActiveIdx=i;
+  document.querySelectorAll('.mcard').forEach((c,j)=>c.classList.toggle('active-card',j===i));
+  document.querySelectorAll('#marksTableWrap tr').forEach((r,j)=>r.classList.toggle('active-row',j===i));
+  const mc=document.getElementById('mc-'+i);
+  if(mc)mc.scrollIntoView({block:'nearest',behavior:'smooth'});
+  const mr=document.getElementById('mr-'+i);
+  if(mr){
+    mr.scrollIntoView({block:'nearest'});
+    if(focus&&f){const inp=mr.querySelector(`input[data-f="${f}"]`);if(inp){inp.focus();inp.select();}}
   }
+}
+
+// Marks voice
+document.getElementById('marksMicBtn').addEventListener('click',()=>{
+  if(VoiceEngine.isListening('marks')){VoiceEngine.stop();return;}
+  if(!students.length)return;
+  VoiceEngine.start('marks',handleMarksVoice,
+    document.getElementById('marksStatus'),
+    document.getElementById('marksMicBtn'),
+    document.getElementById('marksHeard'),
+    voiceLang);
 });
 function handleMarksVoice(transcript){
-  const val = wordsToNumber(transcript);
-  if(val===null) return;
-  if(students.length===0) return;
-  const field = document.getElementById('fieldSelect').value;
-  const s = students[marksActiveIdx];
-  if(val!=='NEXT'){
-    const cap = FIELD_CAPS[field];
-    marks[s.id] = marks[s.id] || {};
-    marks[s.id][field] = Math.max(0, Math.min(cap, val));
-    saveState();
+  if(!students.length)return;
+  const f=activeMarkField;
+  const cap=FIELD_CAPS[f];
+  const vals=voiceTokens(transcript);
+  let changed=false;
+  for(const val of vals){
+    if(val===null||val==='NEXT'){marksActiveIdx=Math.min(marksActiveIdx+1,students.length-1);continue;}
+    const s=students[marksActiveIdx];if(!s)break;
+    const clamped=Math.max(0,Math.min(cap,val));
+    marks[s.id]=marks[s.id]||{};
+    marks[s.id][f]=clamped;
+    // update visible input
+    document.querySelectorAll(`input[data-sid="${s.id}"][data-f="${f}"]`).forEach(inp=>inp.value=clamped);
+    setMarkVal(s.id,marksActiveIdx,f,clamped);
+    if(navigator.vibrate)navigator.vibrate(15);
+    marksActiveIdx=Math.min(marksActiveIdx+1,students.length-1);
+    changed=true;
   }
-  renderMarksTable();
-  setMarksActive(Math.min(marksActiveIdx+1, students.length-1), false);
-  const field2 = document.getElementById('fieldSelect').selectedOptions[0].text;
-  marksStatus.textContent = 'Listening — ' + field2;
+  if(changed){saveState();tapMarks(marksActiveIdx);}
+  document.getElementById('marksStatus').textContent='Listening — '+FIELD_LABELS[f];
 }
 
-document.getElementById('backTo2Btn').addEventListener('click', ()=>goToStep(2));
-document.getElementById('toStep4Btn').addEventListener('click', ()=>goToStep(4));
+document.getElementById('backTo2Btn').addEventListener('click',()=>goToStep(2));
+document.getElementById('toStep4Btn').addEventListener('click',()=>goToStep(4));
 
-/* ---------------- Step 4: Marksheet ---------------- */
-function gradeFor(pct){
-  if(pct>=80) return {g:'A+', gp:4.00};
-  if(pct>=75) return {g:'A', gp:3.75};
-  if(pct>=70) return {g:'A-', gp:3.50};
-  if(pct>=65) return {g:'B+', gp:3.25};
-  if(pct>=60) return {g:'B', gp:3.00};
-  if(pct>=55) return {g:'B-', gp:2.75};
-  if(pct>=50) return {g:'C+', gp:2.50};
-  if(pct>=45) return {g:'C', gp:2.25};
-  if(pct>=40) return {g:'D', gp:2.00};
-  return {g:'F', gp:0.00};
+/* ── STEP 4: MARKSHEET ── */
+function gradeFor(total){
+  if(total>=80)return{g:'A+',gp:4.00};if(total>=75)return{g:'A',gp:3.75};
+  if(total>=70)return{g:'A-',gp:3.50};if(total>=65)return{g:'B+',gp:3.25};
+  if(total>=60)return{g:'B',gp:3.00};if(total>=55)return{g:'B-',gp:2.75};
+  if(total>=50)return{g:'C+',gp:2.50};if(total>=45)return{g:'C',gp:2.25};
+  if(total>=40)return{g:'D',gp:2.00};return{g:'F',gp:0.00};
 }
 function computeRow(s){
-  const m = marks[s.id] || {};
-  const ct1 = m.ct1||0, ct2 = m.ct2||0, mid = m.mid||0, final = m.final||0, a1 = m.asgn1||0, a2 = m.asgn2||0;
-  const ct = ct1+ct2;
-  const asgn = a1+a2;
-  const total = ct + mid + final + asgn;
-  const pct = MAX_TOTAL>0 ? (total/MAX_TOTAL)*100 : 0;
-  const {g, gp} = gradeFor(pct);
-  const attInfo = getAttendanceMark(s.id);
-  const status = pct>=40 ? 'Pass' : 'Fail';
-  return { ct, mid, final, asgn, total, pct, g, gp, att: attInfo.mark, attPct: attInfo.pct, status };
+  const m=marks[s.id]||{};
+  const ct1=m.ct1||0,ct2=m.ct2||0,mid=m.mid||0,final=m.final||0,a1=m.asgn1||0,a2=m.asgn2||0;
+  const ct=ct1+ct2,asgn=a1+a2;
+  const p=attendance[s.id];const pct=attPct(p);const am=attMarks(pct);
+  const total=ct+mid+final+asgn+am;
+  const{g,gp}=gradeFor(total);
+  const status=total>=40?'Pass':'Fail';
+  return{ct,ct1,ct2,mid,final,asgn,a1,a2,total,p,pct,am,g,gp,status};
 }
+
 function renderMarksheet(){
-  const wrap = document.getElementById('marksheetWrap');
-  const statsWrap = document.getElementById('statsGrid');
-  const lineEl = document.getElementById('reportCourseLine');
-  if(lineEl){
-    const parts = [];
-    if(courseInfo.course) parts.push(`Course: ${escapeHtml(courseInfo.course)}`);
-    if(courseInfo.code) parts.push(`Code: ${escapeHtml(courseInfo.code)}`);
-    if(courseInfo.batch) parts.push(`Batch/Section: ${escapeHtml(courseInfo.batch)}`);
-    lineEl.textContent = parts.length ? parts.join('  ·  ') : '';
-  }
-  if(students.length===0){ wrap.innerHTML = `<div class="empty">No students loaded.</div>`; statsWrap.innerHTML=''; return; }
-
-  const computed = students.map(s=>({s, r: computeRow(s)}));
-  const totals = computed.map(c=>c.r.total);
-  const avg = (totals.reduce((a,b)=>a+b,0)/totals.length).toFixed(1);
-  const high = Math.max(...totals).toFixed(1);
-  const low = Math.min(...totals).toFixed(1);
-  const passCount = computed.filter(c=>c.r.status==='Pass').length;
-  const passRate = ((passCount/computed.length)*100).toFixed(0);
-
-  statsWrap.innerHTML = `
+  const wrap=document.getElementById('marksheetWrap'),sg=document.getElementById('statsGrid');
+  if(!students.length){wrap.innerHTML='<div class="empty">No students loaded.</div>';sg.innerHTML='';return;}
+  const computed=students.map(s=>({s,r:computeRow(s)}));
+  const totals=computed.map(c=>c.r.total);
+  const avg=(totals.reduce((a,b)=>a+b,0)/totals.length).toFixed(1);
+  const high=Math.max(...totals),low=Math.min(...totals);
+  const passCount=computed.filter(c=>c.r.status==='Pass').length;
+  sg.innerHTML=`
     <div class="stat-card"><div class="v">${computed.length}</div><div class="l">Students</div></div>
-    <div class="stat-card"><div class="v">${avg}</div><div class="l">Class Average</div></div>
+    <div class="stat-card"><div class="v">${avg}</div><div class="l">Average</div></div>
     <div class="stat-card"><div class="v">${high}</div><div class="l">Highest</div></div>
     <div class="stat-card"><div class="v">${low}</div><div class="l">Lowest</div></div>
-    <div class="stat-card"><div class="v">${passRate}%</div><div class="l">Pass Rate (${passCount}/${computed.length})</div></div>
-  `;
-
-  let rows = computed.map((c,i)=>{
-    const s = c.s, r = c.r;
-    return `<tr>
-      <td>${i+1}</td>
-      <td style="font-family:'JetBrains Mono',monospace;">${escapeHtml(s.sid)}</td>
-      <td>${escapeHtml(s.name)}</td>
-      <td>${r.ct}/10</td>
-      <td>${r.mid}/30</td>
-      <td>${r.final}/40</td>
-      <td>${r.asgn}/10</td>
-      <td><strong>${r.total}/90</strong> <span class="hint">(${r.pct.toFixed(1)}%)</span></td>
-      <td>${r.att!==undefined ? r.att+'/10' : '—'}</td>
-      <td class="grade-chip">${r.g}</td>
-      <td><span class="badge ${r.status==='Pass'?'pass':'fail'}">${r.status}</span></td>
-    </tr>`;
+    <div class="stat-card"><div class="v">${((passCount/computed.length)*100).toFixed(0)}%</div><div class="l">Pass Rate (${passCount}/${computed.length})</div></div>`;
+  const medal={};
+  [...computed].sort((a,b)=>b.r.total-a.r.total).slice(0,3).forEach((c,i)=>{medal[c.s.id]=['🥇','🥈','🥉'][i];});
+  const rows=computed.map((c,i)=>{
+    const s=c.s,r=c.r,m=medal[s.id]?`<span class="medal">${medal[s.id]}</span>`:'';
+    return `<tr class="${medal[s.id]?'top-row':''}"><td>${i+1}</td><td style="font-family:'JetBrains Mono',monospace;font-size:.75rem">${escapeHtml(s.sid)}</td>
+      <td>${m}${escapeHtml(s.name)}</td>
+      <td>${r.ct}/10</td><td>${r.mid}/30</td><td>${r.final}/40</td><td>${r.asgn}/10</td>
+      <td>${r.pct===null?'—':r.pct.toFixed(1)+'%'}</td><td>${r.am}/10</td>
+      <td><strong>${r.total}/100</strong></td><td class="grade-chip">${r.g}</td>
+      <td><span class="badge ${r.status==='Pass'?'pass':'fail'}">${r.status}</span></td></tr>`;
   }).join('');
-
-  wrap.innerHTML = `<table><thead><tr>
-    <th>#</th><th>ID</th><th>Name</th><th>CT (10)</th><th>Mid (30)</th><th>Final (40)</th><th>Asgn (10)</th>
-    <th>Total (90)</th><th>Attendance</th><th>Grade</th><th>Status</th>
+  const head=`<div class="report-head">
+    <h2>${escapeHtml(courseInfo.course||'Semester Marksheet')}</h2>
+    <p>Code: <strong>${escapeHtml(courseInfo.code||'—')}</strong> &nbsp;|&nbsp; Batch/Section: <strong>${escapeHtml(courseInfo.batch||'—')}</strong></p>
+    <p>Attendance ${totalClasses?totalClasses+' classes':''}</p>
+  </div>`;
+  wrap.innerHTML=head+`<table><thead><tr>
+    <th>#</th><th>ID</th><th>Name</th><th>CT(10)</th><th>Mid(30)</th><th>Final(40)</th>
+    <th>Asgn(10)</th><th>Att%</th><th>Att Marks(10)</th><th>Total(100)</th><th>Grade</th><th>Result</th>
   </tr></thead><tbody>${rows}</tbody></table>`;
-
-  renderTopPerformers();
+  // Top 3
+  const topT=[...computed].sort((a,b)=>b.r.total-a.r.total).slice(0,3);
+  const topCT=[...computed].sort((a,b)=>b.r.ct-a.r.ct).slice(0,3);
+  const topA=[...computed].sort((a,b)=>b.r.asgn-a.r.asgn).slice(0,3);
+  const li=(arr,sc)=>`<ol>${arr.map(x=>`<li><b>${sc(x)}</b> — ${escapeHtml(x.s.name)}</li>`).join('')}</ol>`;
+  document.getElementById('topPerformers').innerHTML=`<h3 style="font-family:'Fraunces',serif;font-size:1.05rem;margin:0 0 10px">🏆 Top 3 Students</h3>
+    <div class="top3-report">
+      <div class="top3-card"><h4>Overall</h4>${li(topT,x=>x.r.total+'/100')}</div>
+      <div class="top3-card"><h4>CT Total</h4>${li(topCT,x=>x.r.ct+'/10')}</div>
+      <div class="top3-card"><h4>Assignment</h4>${li(topA,x=>x.r.asgn+'/10')}</div>
+    </div>`;
 }
 
-const TP_FIELDS = [
-  {key:'ct1', label:'CT1'}, {key:'ct2', label:'CT2'}, {key:'mid', label:'Mid'},
-  {key:'final', label:'Final'}, {key:'asgn1', label:'Asgn 1'}, {key:'asgn2', label:'Asgn 2'}
-];
-function renderTopPerformers(){
-  const el = document.getElementById('topPerformers');
-  if(!el) return;
-
-  // group students by batch (fallback to a single "All Students" group if batch is blank/uniform)
-  const groups = {};
-  students.forEach(s=>{
-    const key = (s.batch && s.batch.trim()) ? s.batch.trim() : 'All Students';
-    (groups[key] = groups[key] || []).push(s);
-  });
-
-  const batchKeys = Object.keys(groups);
-  let html = `<h3 style="font-family:'Fraunces',serif;font-size:1.1rem;margin:0 0 12px;">🏆 Top 3 by Component ${batchKeys.length>1?'(per Batch)':''}</h3>`;
-
-  batchKeys.forEach(batchKey=>{
-    const list = groups[batchKey];
-    const cols = TP_FIELDS.map(f=>{
-      const ranked = list
-        .map(s=>({ name:s.name || s.sid, score: (marks[s.id] && marks[s.id][f.key]!==undefined) ? marks[s.id][f.key] : null }))
-        .filter(x=>x.score!==null)
-        .sort((a,b)=>b.score - a.score)
-        .slice(0,3);
-      const items = ranked.length
-        ? ranked.map(r=>`<li><b>${r.score}</b> — ${escapeHtml(r.name)}</li>`).join('')
-        : `<li class="tp-empty">No marks yet</li>`;
-      return `<div class="tp-col"><div class="tp-label">${f.label}</div><ol>${items}</ol></div>`;
-    }).join('');
-    html += `<div class="tp-batch"><h3>${escapeHtml(batchKey)} · ${list.length} student(s)</h3><div class="tp-grid">${cols}</div></div>`;
-  });
-
-  el.innerHTML = html;
-}
-
-document.getElementById('backTo3Btn').addEventListener('click', ()=>goToStep(3));
-
-document.getElementById('csvBtn').addEventListener('click', ()=>{
-  const header = ['#','Student ID','Name','CT(10)','Mid(30)','Final(40)','Asgn(10)','Total(90)','Total(%)','Attendance(10)','Grade','Status'];
-  const lines = [header.join(',')];
+document.getElementById('backTo3Btn').addEventListener('click',()=>goToStep(3));
+document.getElementById('csvBtn').addEventListener('click',()=>{
+  const h=['#','Student ID','Name','CT1(5)','CT2(5)','CT(10)','Mid(30)','Final(40)','Asgn1(5)','Asgn2(5)','Asgn(10)','Present','Att%','AttMarks(10)','Total(100)','Grade','Result'];
+  const lines=[h.join(',')];
   students.forEach((s,i)=>{
-    const r = computeRow(s);
-    lines.push([i+1, s.sid, `"${(s.name||'').replace(/"/g,'""')}"`, r.ct, r.mid, r.final, r.asgn, r.total, r.pct.toFixed(1), (r.att!==undefined?r.att:''), r.g, r.status].join(','));
+    const r=computeRow(s);
+    lines.push([i+1,s.sid,`"${(s.name||'').replace(/"/g,'""')}"`,r.ct1,r.ct2,r.ct,r.mid,r.final,r.a1,r.a2,r.asgn,
+      r.p??'',r.pct===null?'':r.pct.toFixed(1),r.am,r.total,r.g,r.status].join(','));
   });
-  const blob = new Blob([lines.join('\n')], {type:'text/csv'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `marksheet_${courseInfo.code||'course'}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'}));
+  a.download=`marksheet_${courseInfo.code||'course'}.csv`;a.click();
 });
-document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+document.getElementById('printBtn').addEventListener('click',()=>{
+  const gd=document.getElementById('genDate');
+  if(gd)gd.textContent='Generated on '+new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+  window.print();
+});
 
-/* ---------------- Init ---------------- */
+/* ── UTILS ── */
+function escapeHtml(s){return(s||'').toString().replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+/* ── INIT ── */
 (async function init(){
-  wireCourseInfoInputs();
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
+  }
   await loadState();
   updateCourseTag();
   renderRosterTable();
+  renderLangPills('attnLangRow');
+  renderLangPills('marksLangRow');
   goToStep(1);
 })();
 </script>
