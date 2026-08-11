@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gradebook — Class Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --ink:#243447;
+    --ink-soft:#667085;
+    --paper:#F6F7F9;
+    --paper-line:#D9DEE7;
+    --chalk:#244A5A;
+    --chalk-dark:#193844;
+    --gold:#D19A35;
+    --gold-soft:#FFF4D6;
+    --pass:#3A7D44;
+    --pass-bg:#E6F0E3;
+    --fail:#B84C3C;
+    --fail-bg:#FBEAE6;
+    --white:#FFFFFF;
+    --radius:10px;
+    --shadow:0 2px 10px rgba(30,42,58,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px);
+    background-size: 100% 42px;
+    color:var(--ink);
+    font-family:Arial, Helvetica, sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{ max-width:1180px; margin:0 auto; padding:24px 20px 70px; }
+  .section-kicker{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);font-weight:700;margin-bottom:4px;}
+  .mobile-note{display:none;font-size:.76rem;color:var(--ink-soft);margin:8px 0;}
+
+  /* Header */
+  .masthead{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--chalk); color:var(--paper);
+    border-radius:var(--radius);
+    padding:22px 28px;
+    box-shadow:var(--shadow);
+    background-image: radial-gradient(circle at 90% -10%, rgba(201,162,75,0.25), transparent 55%);
+  }
+  .masthead h1{
+    font-family:Georgia, 'Times New Roman', serif; font-weight:700; font-size:1.65rem; margin:0;
+    letter-spacing:0;
+  }
+  .masthead .tagline{ font-size:0.82rem; color:#E7EEF1; margin-top:5px; letter-spacing:0;}
+  .masthead .course-tag{
+    font-family:'JetBrains Mono',monospace; font-size:0.78rem;
+    background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);
+    padding:8px 14px; border-radius:8px; text-align:right; line-height:1.5;
+  }
+
+  /* Stepper */
+  .stepper{ display:flex; gap:8px; margin:22px 0 24px; }
+  .step-tab{
+    flex:1; text-align:left; cursor:pointer; user-select:none;
+    background:var(--white); border:1px solid var(--paper-line);
+    border-radius:var(--radius); padding:12px 16px;
+    transition:all .15s ease; position:relative;
+  }
+  .step-tab .num{
+    font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--ink-soft);
+    display:block; margin-bottom:2px;
+  }
+  .step-tab .label{ font-family:'Fraunces',serif; font-weight:600; font-size:0.98rem; }
+  .step-tab.active{
+    background:var(--chalk); border-color:var(--chalk);
+  }
+  .step-tab.active .num{ color:var(--gold); }
+  .step-tab.active .label{ color:var(--paper); }
+  .step-tab.done::after{
+    content:"✓"; position:absolute; top:10px; right:12px; color:var(--pass); font-weight:700;
+  }
+  .step-tab:not(.active):hover{ border-color:var(--gold); }
+
+  /* Panels */
+  .panel{
+    background:var(--white); border:1px solid var(--paper-line);
+    border-radius:var(--radius); padding:26px; box-shadow:var(--shadow);
+    margin-bottom:20px;
+  }
+  .panel h2{ font-family:Georgia, 'Times New Roman', serif; font-size:1.3rem; margin:0 0 6px; }
+  .panel .sub{ color:var(--ink-soft); font-size:0.9rem; margin-bottom:18px; }
+
+  /* Buttons */
+  button{ font-family:'Inter',sans-serif; cursor:pointer; border:none; border-radius:8px; }
+  .btn{
+    background:var(--chalk); color:var(--paper); padding:10px 18px;
+    font-weight:600; font-size:0.88rem; transition:background .15s;
+  }
+  .btn:hover{ background:var(--chalk-dark); }
+  .btn:disabled{ background:#ccc; cursor:not-allowed; }
+  .btn.gold{ background:var(--gold); color:var(--chalk-dark); }
+  .btn.gold:hover{ background:#b78f3c; }
+  .btn.outline{ background:transparent; color:var(--chalk); border:1.5px solid var(--chalk); }
+  .btn.outline:hover{ background:var(--chalk); color:var(--paper); }
+  .btn.small{ padding:6px 12px; font-size:0.78rem; }
+  .mic-btn{
+    width:38px; height:38px; border-radius:50%; background:var(--paper);
+    border:1.5px solid var(--chalk); font-size:1rem; display:inline-flex;
+    align-items:center; justify-content:center; transition:all .15s;
+  }
+  .mic-btn.listening{ background:var(--fail); border-color:var(--fail); color:white; animation:pulse 1s infinite; }
+  @keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(184,76,60,0.5);} 70%{box-shadow:0 0 0 10px rgba(184,76,60,0);} 100%{box-shadow:0 0 0 0 rgba(184,76,60,0);} }
+
+  /* Upload zone */
+  .dropzone{
+    border:2px dashed var(--paper-line); border-radius:var(--radius);
+    padding:40px 20px; text-align:center; color:var(--ink-soft);
+    background:var(--paper); transition:border-color .15s;
+  }
+  .dropzone.drag{ border-color:var(--gold); background:var(--gold-soft); }
+  .dropzone input{ display:none; }
+
+  /* Tables */
+  table{ width:100%; border-collapse:collapse; font-size:0.88rem; }
+  thead th{
+    text-align:left; font-family:'JetBrains Mono',monospace; font-size:0.72rem;
+    text-transform:uppercase; letter-spacing:0.5px; color:var(--ink-soft);
+    border-bottom:2px solid var(--ink); padding:10px 8px; background:var(--paper);
+    position:sticky; top:0;
+  }
+  tbody td{ padding:8px; border-bottom:1px solid var(--paper-line); vertical-align:middle; }
+  tbody tr:hover{ background:#FAF6ED; }
+  tbody tr.active-row{ background:var(--gold-soft); }
+  .tbl-wrap{ max-height:520px; overflow:auto; border:1px solid var(--paper-line); border-radius:8px; }
+  input.cell{
+    width:100%; padding:7px 8px; border:1px solid var(--paper-line); border-radius:6px;
+    font-family:'JetBrains Mono',monospace; font-size:0.85rem; background:var(--white); color:var(--ink);
+  }
+  input.cell:focus{ outline:none; border-color:var(--gold); box-shadow:0 0 0 2px var(--gold-soft); }
+  input.name-cell{ font-family:'Inter',sans-serif; }
+  td.num-cell input{ text-align:center; }
+
+  .toolbar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  .toolbar .grow{ flex:1; }
+  select.field-select{
+    padding:9px 12px; border-radius:8px; border:1.5px solid var(--chalk); font-weight:600;
+    font-family:'Inter',sans-serif; background:var(--white); color:var(--chalk);
+  }
+  .status-pill{
+    display:inline-flex; align-items:center; gap:6px; font-size:0.8rem; padding:6px 12px;
+    border-radius:20px; background:var(--paper); border:1px solid var(--paper-line); color:var(--ink-soft);
+  }
+  .status-pill.live{ background:var(--fail-bg); color:var(--fail); border-color:var(--fail); }
+  .voice-help{font-size:.78rem;color:var(--ink-soft);margin-top:5px}
+  .attn-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+  .attn-card{background:var(--paper);border:1px solid var(--paper-line);border-radius:8px;padding:10px 12px}
+  .attn-card b{font-family:'Fraunces',serif;font-size:1.25rem;color:var(--chalk)}
+  .report-head{text-align:center;margin:0 0 18px;padding-bottom:14px;border-bottom:2px solid var(--ink)}
+  .report-head h2{margin:0;font-family:'Fraunces',serif}
+  .report-head p{margin:4px 0;color:var(--ink-soft);font-size:.86rem}
+  .top3-report{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:0 0 20px}
+  .top3-card{border:1px solid var(--paper-line);border-radius:10px;padding:12px;background:var(--paper)}
+  .top3-card h4{margin:0 0 6px;font-family:'Fraunces',serif}
+  .top3-card ol{margin:0;padding-left:20px;font-size:.84rem}
+  .permission-box{padding:9px 12px;border-radius:8px;background:var(--gold-soft);color:var(--chalk-dark);font-size:.8rem}
+
+
+  .nav-row{ display:flex; justify-content:space-between; margin-top:6px; }
+
+  .badge{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.78rem; padding:3px 9px; border-radius:6px; }
+  .badge.pass{ background:var(--pass-bg); color:var(--pass); }
+  .badge.fail{ background:var(--fail-bg); color:var(--fail); }
+  .grade-chip{ font-family:'Fraunces',serif; font-weight:700; }
+
+  .stats-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:20px; }
+  .stat-card{
+    background:var(--paper); border:1px solid var(--paper-line); border-radius:10px; padding:14px 16px;
+  }
+  .stat-card .v{ font-family:'Fraunces',serif; font-size:1.6rem; font-weight:700; color:var(--chalk); }
+  .stat-card .l{ font-size:0.75rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.4px; }
+
+  .hint{ font-size:0.78rem; color:var(--ink-soft); margin-top:6px; }
+
+  .tp-batch{ margin-bottom:16px; border:1px solid var(--paper-line); border-radius:10px; overflow:hidden; }
+  .tp-batch h3{
+    font-family:'Fraunces',serif; font-size:1rem; margin:0; padding:10px 16px;
+    background:var(--chalk); color:var(--paper);
+  }
+  .tp-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:0; }
+  .tp-col{ padding:12px 16px; border-left:1px solid var(--paper-line); }
+  .tp-col:first-child{ border-left:none; }
+  .tp-col .tp-label{ font-family:'JetBrains Mono',monospace; font-size:0.7rem; text-transform:uppercase; color:var(--ink-soft); letter-spacing:0.5px; margin-bottom:8px; }
+  .tp-col ol{ margin:0; padding-left:18px; font-size:0.85rem; }
+  .tp-col li{ margin-bottom:4px; }
+  .tp-col li b{ color:var(--chalk); font-family:'JetBrains Mono',monospace; }
+  .tp-empty{ color:var(--ink-soft); font-size:0.8rem; font-style:italic; }
+  .empty{ text-align:center; padding:50px 20px; color:var(--ink-soft); }
+  .empty .big{ font-family:Georgia, 'Times New Roman', serif; font-size:1.15rem; color:var(--ink); margin-bottom:6px; }
+
+  /* Component performance summary */
+  .performance-summary{margin:0 0 22px;border:1px solid var(--paper-line);border-radius:10px;overflow:hidden;background:#fff;}
+  .performance-summary h3{margin:0;padding:12px 15px;background:#EEF2F5;color:var(--chalk);font-size:1rem;font-weight:700;}
+  .performance-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--paper-line);}
+  .performance-card{background:#fff;padding:13px 14px;}
+  .performance-card .component{font-weight:700;color:var(--ink);margin-bottom:9px;}
+  .performance-values{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+  .performance-value{border:1px solid var(--paper-line);border-radius:7px;padding:7px 6px;text-align:center;background:#FAFBFC;}
+  .performance-value .label{display:block;font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);font-weight:700;}
+  .performance-value .score{display:block;margin-top:2px;font-size:1rem;font-weight:700;color:var(--chalk);}
+  .performance-value .student{display:block;margin-top:2px;font-size:.68rem;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+  @media print{
+    body{ background:white; }
+    .masthead, .stepper, .toolbar, .nav-row, .no-print, .dropzone{ display:none !important; }
+    .panel{ box-shadow:none; border:none; padding:0; }
+    #panel-4{ display:block !important; }
+    .step-tab, .app > .panel:not(#panel-4){ display:none !important; }
+  }
+  @media (max-width:720px){
+    .app{padding:12px 10px 45px;}
+    .masthead{flex-direction:column;align-items:flex-start;gap:10px;padding:18px 16px;border-radius:9px;}
+    .masthead h1{font-size:1.35rem;}
+    .masthead .course-tag{width:100%;text-align:left;font-size:.72rem;overflow:hidden;text-overflow:ellipsis;}
+    .stepper{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));overflow-x:auto;gap:6px;margin:12px 0 14px;padding-bottom:2px;}
+    .step-tab{padding:9px 10px;min-width:120px;}
+    .step-tab .num{font-size:.62rem;}
+    .step-tab .label{font-size:.82rem;}
+    .panel{padding:16px 12px;border-radius:9px;margin-bottom:12px;}
+    .panel h2{font-size:1.16rem;}
+    .panel .sub{font-size:.82rem;line-height:1.45;}
+    .toolbar{gap:8px;align-items:stretch;}
+    .toolbar .grow{display:none;}
+    .toolbar .field-select,.toolbar input.cell{max-width:none!important;width:100%;}
+    .toolbar .btn:not(.mic-btn){min-height:42px;}
+    .toolbar .mic-btn{flex:0 0 42px;width:42px;height:42px;}
+    .toolbar .status-pill{align-self:center;}
+    .permission-box{line-height:1.4;}
+    .mobile-note{display:block;}
+    .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;max-height:none;}
+    .tbl-wrap table{min-width:720px;}
+    #rosterTableWrap .tbl-wrap table{min-width:650px;}
+    #attnTableWrap table{min-width:680px;}
+    #marksTableWrap table{min-width:850px;}
+    #marksheetWrap table{min-width:1050px;}
+    thead th{position:static;}
+    .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+    .stat-card{padding:11px;}
+    .stat-card .v{font-size:1.3rem;}
+    .top3-report{grid-template-columns:1fr;}
+    .performance-grid{grid-template-columns:1fr;}
+    .performance-card{padding:11px;}
+    .performance-values{gap:5px;}
+    .nav-row{gap:8px;}
+    .nav-row .btn{flex:1;min-height:42px;}
+    #dropzone{padding:28px 14px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="masthead">
+    <div>
+      <h1>Gradebook</h1>
+      <div class="tagline">Roster → Attendance → Marks → Result</div>
+    </div>
+    <div class="course-tag" id="courseTag">Course: — · Code: — · Batch: —</div>
+  </div>
+
+  <div class="stepper no-print">
+    <div class="step-tab active" data-step="1"><span class="num">Step 01</span><span class="label">Student Sheet</span></div>
+    <div class="step-tab" data-step="2"><span class="num">Step 02</span><span class="label">Attendance</span></div>
+    <div class="step-tab" data-step="3"><span class="num">Step 03</span><span class="label">Enter Marks</span></div>
+    <div class="step-tab" data-step="4"><span class="num">Step 04</span><span class="label">Marksheet</span></div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="panel" id="panel-1">
+    <h2>Student Sheet</h2>
+    <div class="sub">Upload the class list PDF. We'll pull out Student ID, Name, Batch and Course Code — check the table below and fix anything before moving on.</div>
+
+    <div class="dropzone no-print" id="dropzone">
+      <div>📄 Drop a PDF here, or</div>
+      <button class="btn gold" style="margin-top:10px" id="pickFileBtn">Choose PDF file</button>
+      <input type="file" id="fileInput" accept="application/pdf">
+      <div class="hint" id="fileStatus">No file loaded yet.</div>
+    </div>
+
+    <div style="margin-top:20px;" id="rosterTableWrap"></div>
+
+    <div class="toolbar no-print" style="margin-top:16px;">
+      <button class="btn outline small" id="addRowBtn">+ Add student row</button>
+      <div class="grow"></div>
+      <span class="hint" id="rosterCount"></span>
+    </div>
+
+    <div class="nav-row no-print">
+      <span></span>
+      <button class="btn" id="toStep2Btn" disabled>Continue to Attendance →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="panel" id="panel-2" style="display:none;">
+    <h2>Attendance Sheet</h2>
+    <div class="sub">Enter the total number of classes held, then enter how many classes each student attended. The app automatically converts attendance to percentage and attendance marks out of 10.</div>
+
+    <div class="toolbar no-print">
+      <label class="hint">Classes held:</label>
+      <input class="cell" id="totalClassesInput" type="number" min="1" step="1" style="max-width:110px" placeholder="e.g. 12">
+      <button class="btn small outline" id="applyClassesBtn">Apply</button>
+      <button class="btn gold mic-btn" id="attnMicBtn" title="Start voice attendance">🎤</button>
+      <span class="status-pill" id="attnStatus">Voice off</span>
+      <span class="hint" id="attnHeard" style="min-width:120px;"></span>
+      <div class="grow"></div>
+      <span class="hint">Say “8 next 9 next…” or type directly</span>
+    </div>
+    <div class="permission-box no-print">🎤 First time? Click the microphone and allow microphone access when the browser asks. Voice works best in Chrome/Edge on HTTPS or localhost.</div>
+    <div style="margin:12px 0" id="attnSummary"></div>
+    <div class="tbl-wrap" id="attnTableWrap"></div>
+
+    <div class="nav-row no-print">
+      <button class="btn outline" id="backTo1Btn">← Back</button>
+      <button class="btn" id="toStep3Btn">Continue to Marks →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="panel" id="panel-3" style="display:none;">
+    <h2>Enter Marks</h2>
+    <div class="sub">Type directly into the table, or pick a field, click the mic, and speak the number — including half marks such as 0.5 or 1.5. It fills in and jumps to the next student. Made a mistake earlier? Click that cell and type over it — use ↑/↓ to move between rows without losing your place.</div>
+
+    <div class="toolbar no-print">
+      <label class="hint" style="margin-right:-6px;">Field:</label>
+      <select class="field-select" id="fieldSelect">
+        <option value="ct1">CT1 (0–5)</option>
+        <option value="ct2">CT2 (0–5)</option>
+        <option value="mid">Mid (0–30)</option>
+        <option value="final">Final (0–40)</option>
+        <option value="asgn1">Assignment 1 (0–5)</option>
+        <option value="asgn2">Assignment 2 (0–5)</option>
+      </select>
+      <button class="btn gold mic-btn" id="marksMicBtn" title="Start voice marks entry">🎤</button>
+      <span class="status-pill" id="marksStatus">Voice off</span>
+      <span class="hint" id="marksHeard" style="min-width:120px;"></span>
+      <div class="grow"></div>
+      <span class="hint">Say 1.5, “one point five”, “point five”, or “next”</span>
+    </div>
+
+    <div class="tbl-wrap" id="marksTableWrap"></div>
+
+    <div class="nav-row no-print">
+      <button class="btn outline" id="backTo2Btn">← Back</button>
+      <button class="btn" id="toStep4Btn">Generate Marksheet →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="panel" id="panel-4" style="display:none;">
+    <h2>Semester Marksheet</h2>
+    <div class="sub">CT1 + CT2 = 10 · Mid = 30 · Final = 40 · Assignment 1 + 2 = 10 · Attendance = 10 · Total = 100</div>
+    <div class="mobile-note">On a phone, swipe the marksheet table left and right to see all columns.</div>
+
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <div id="topPerformers" style="margin-bottom:22px;"></div>
+
+    <div class="toolbar no-print">
+      <button class="btn outline small" id="csvBtn">⬇ Download CSV</button>
+      <button class="btn outline small" id="printBtn">🖨 Print</button>
+      <div class="grow"></div>
+    </div>
+
+    <div class="tbl-wrap" id="marksheetWrap"></div>
+
+    <div class="nav-row no-print">
+      <button class="btn outline" id="backTo3Btn">← Back</button>
+      <span></span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ---------------- State ---------------- */
+let students = [];         // {id, sid, name, batch, course}
+let attendance = {};        // sid -> classes present
+let totalClasses = 0;       // total classes held
+let marks = {};              // sid -> {ct1,ct2,mid,final,asgn1,asgn2}
+let currentStep = 1;
+let attnActiveIdx = 0;
+let marksActiveIdx = 0;
+let courseInfo = { course:'', code:'', batch:'' };
+
+const FIELD_CAPS = { ct1:5, ct2:5, mid:30, final:40, asgn1:5, asgn2:5 };
+
+/* ---------------- Storage ---------------- */
+async function saveState(){
+  try{
+    await window.storage.set('gb-students', JSON.stringify(students));
+    await window.storage.set('gb-attendance', JSON.stringify(attendance));
+    await window.storage.set('gb-total-classes', String(totalClasses));
+    await window.storage.set('gb-marks', JSON.stringify(marks));
+    await window.storage.set('gb-course', JSON.stringify(courseInfo));
+  }catch(e){ console.warn('save failed', e); }
+}
+async function loadState(){
+  try{
+    const s = await window.storage.get('gb-students');
+    if(s) students = JSON.parse(s.value);
+  }catch(e){}
+  try{
+    const a = await window.storage.get('gb-attendance');
+    if(a) attendance = JSON.parse(a.value);
+  }catch(e){}
+  try{
+    const tc = await window.storage.get('gb-total-classes');
+    if(tc) totalClasses = parseInt(tc.value,10) || 0;
+  }catch(e){}
+  try{
+    const m = await window.storage.get('gb-marks');
+    if(m) marks = JSON.parse(m.value);
+  }catch(e){}
+  try{
+    const c = await window.storage.get('gb-course');
+    if(c) courseInfo = JSON.parse(c.value);
+  }catch(e){}
+}
+
+function updateCourseTag(){
+  document.getElementById('courseTag').textContent =
+    `Course: ${courseInfo.course || '—'} · Code: ${courseInfo.code || '—'} · Batch: ${courseInfo.batch || '—'}`;
+}
+
+/* ---------------- Voice number parsing ---------------- */
+const NUM_WORDS = {
+  zero:0, oh:0, o:0, one:1, won:1, two:2, to:2, too:2, three:3, tree:3,
+  four:4, for:4, five:5, six:6, seven:7, eight:8, ate:8, nine:9, ten:10,
+  eleven:11, twelve:12, thirteen:13, fourteen:14, fifteen:15, sixteen:16,
+  seventeen:17, eighteen:18, nineteen:19, twenty:20, thirty:30, forty:40,
+  fifty:50
+};
+function wordsToNumber(raw){
+  if(!raw) return null;
+  let t=raw.toLowerCase().trim().replace(/[.,!?]+$/g,'');
+  if(/^(next|skip|pass|go)\b/.test(t)) return 'NEXT';
+
+  // Direct numbers, including .5, 0.5, 1.5, 2.5 etc.
+  if(/^\.\d+$/.test(t)) return parseFloat('0'+t);
+  if(/^\d+(?:\.\d+)?$/.test(t)) return parseFloat(t);
+
+  // Spoken decimals: "one point five", "two point five", "point five"
+  const decimalWords = t.match(/^(zero|oh|o|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|twenty|thirty|forty|fifty)\s+point\s+(zero|oh|o|one|two|three|four|five|six|seven|eight|nine)$/);
+  if(decimalWords){
+    const whole=NUM_WORDS[decimalWords[1]], dec=NUM_WORDS[decimalWords[2]];
+    return parseFloat(`${whole}.${dec}`);
+  }
+  const pointOnly=t.match(/^point\s+(zero|oh|o|one|two|three|four|five|six|seven|eight|nine)$/);
+  if(pointOnly){ return parseFloat(`0.${NUM_WORDS[pointOnly[1]]}`); }
+
+  // Mixed spoken/numeric decimals: "1 point 5", ".5 point..." is not accepted.
+  const mixed=t.match(/^(\d+)\s+point\s+(\d)$/);
+  if(mixed) return parseFloat(`${mixed[1]}.${mixed[2]}`);
+
+  let parts=t.split(/\s+/).filter(Boolean);
+  if(parts.length===2 && NUM_WORDS[parts[0]]!==undefined && NUM_WORDS[parts[1]]!==undefined &&
+     NUM_WORDS[parts[0]]>=20 && NUM_WORDS[parts[1]]<10) return NUM_WORDS[parts[0]]+NUM_WORDS[parts[1]];
+  for(const w of parts) if(NUM_WORDS[w]!==undefined) return NUM_WORDS[w];
+  const d=t.match(/\.?\d+(?:\.\d+)?/); return d?parseFloat(d[0]):null;
+}
+function voiceTokens(raw){
+  // Handles phrases such as “8 next 9 next 7” in one transcript.
+  const chunks=raw.toLowerCase().split(/\bnext\b|\bskip\b|\bthen\b|,|;/).map(s=>s.trim()).filter(Boolean);
+  const out=[];
+  for(const c of chunks){
+    const n=wordsToNumber(c);
+    if(n!==null) out.push(n);
+  }
+  return out.length?out:[wordsToNumber(raw)];
+}
+/* ---------------- Shared voice engine ----------------
+   Continuous recognition + automatic restart gives smoother hands-free entry.
+   One recognition session is kept alive while possible; final transcripts are
+   parsed into values and the active row advances only after a valid value. */
+const VoiceEngine = (() => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec=null, mode=null, cb=null, statusEl=null, micBtn=null, heardEl=null;
+  let wanted=false, restarting=false;
+
+  function ui(on){
+    if(micBtn) micBtn.classList.toggle('listening',on);
+  }
+  function make(){
+    if(!SR) return null;
+    const r=new SR();
+    r.continuous=true;
+    r.interimResults=true;
+    r.lang='en-US';
+    r.maxAlternatives=3;
+    r.onresult=e=>{
+      let finalText='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        const tr=e.results[i][0].transcript;
+        if(e.results[i].isFinal) finalText += ' '+tr;
+        if(heardEl && !e.results[i].isFinal) heardEl.textContent='“'+tr.trim()+'”';
+      }
+      if(finalText.trim()){
+        if(heardEl) heardEl.textContent='“'+finalText.trim()+'”';
+        if(cb) cb(finalText.trim());
+      }
+    };
+    r.onerror=e=>{
+      if(e.error==='not-allowed' || e.error==='service-not-allowed'){
+        wanted=false; ui(false);
+        if(statusEl){statusEl.textContent='Microphone permission blocked';statusEl.classList.add('live');}
+        return;
+      }
+      if(statusEl && wanted) statusEl.textContent='Listening…';
+    };
+    r.onend=()=>{
+      if(!wanted || restarting) return;
+      restarting=true;
+      setTimeout(()=>{
+        restarting=false;
+        if(wanted) startRecognizer();
+      },250);
+    };
+    return r;
+  }
+  function startRecognizer(){
+    if(!wanted) return;
+    rec=make();
+    if(!rec) return;
+    try{rec.start();}catch(e){}
+  }
+  function start(newMode, callback, sEl, mBtn, hEl){
+    stop();
+    if(!SR){
+      sEl.textContent='Voice not supported — use Chrome/Edge';
+      return false;
+    }
+    mode=newMode; cb=callback; statusEl=sEl; micBtn=mBtn; heardEl=hEl;
+    wanted=true; ui(true);
+    statusEl.textContent='Listening…'; statusEl.classList.add('live');
+    startRecognizer();
+    return true;
+  }
+  function stop(){
+    wanted=false; restarting=false;
+    if(rec){try{rec.abort();}catch(e){}}
+    rec=null; ui(false);
+    if(statusEl){statusEl.textContent='Voice off';statusEl.classList.remove('live');}
+    if(heardEl) heardEl.textContent='';
+    mode=null; cb=null;
+  }
+  function isListening(m){return wanted && mode===m;}
+  return {start,stop,isListening};
+})();
+/* ---------------- Step navigation ---------------- */
+function goToStep(n){
+  if(typeof VoiceEngine !== 'undefined') VoiceEngine.stop();
+  currentStep = n;
+  for(let i=1;i<=4;i++){
+    document.getElementById('panel-'+i).style.display = (i===n)?'block':'none';
+  }
+  document.querySelectorAll('.step-tab').forEach(el=>{
+    const s = parseInt(el.dataset.step);
+    el.classList.toggle('active', s===n);
+    el.classList.toggle('done', s<n);
+  });
+  if(n===2) renderAttendanceTable();
+  if(n===3) renderMarksTable();
+  if(n===4) renderMarksheet();
+}
+document.querySelectorAll('.step-tab').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    const s = parseInt(el.dataset.step);
+    if(s===1 || students.length>0) goToStep(s);
+  });
+});
+
+/* ---------------- Step 1: Student Sheet ---------------- */
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+document.getElementById('pickFileBtn').addEventListener('click', ()=>fileInput.click());
+fileInput.addEventListener('change', e=>{ if(e.target.files[0]) handlePdf(e.target.files[0]); });
+['dragenter','dragover'].forEach(ev=>dropzone.addEventListener(ev, e=>{ e.preventDefault(); dropzone.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev, e=>{ e.preventDefault(); dropzone.classList.remove('drag'); }));
+dropzone.addEventListener('drop', e=>{
+  const f = e.dataTransfer.files[0];
+  if(f && f.type==='application/pdf') handlePdf(f);
+});
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+async function handlePdf(file){
+  const statusEl = document.getElementById('fileStatus');
+  statusEl.textContent = 'Reading ' + file.name + ' …';
+  try{
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+    let fullText = '';
+    for(let p=1; p<=pdf.numPages; p++){
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      const lines = {};
+      content.items.forEach(it=>{
+        const y = Math.round(it.transform[5]);
+        lines[y] = (lines[y]||'') + it.str + ' ';
+      });
+      const ys = Object.keys(lines).map(Number).sort((a,b)=>b-a);
+      ys.forEach(y=> fullText += lines[y].trim() + '\n');
+    }
+    parseRosterText(fullText);
+    statusEl.textContent = `Loaded ${file.name} — extracted ${students.length} student(s). Review & edit below.`;
+  }catch(err){
+    console.error(err);
+    statusEl.textContent = 'Could not read that PDF (' + err.message + '). Add rows manually below.';
+  }
+  saveState();
+  renderRosterTable();
+}
+
+function parseRosterText(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const found = [];
+  const seenIds = new Set();
+
+  // ---- labeled header fields (Trimester / Program / Section / Course Code / Course Title / Batch) ----
+  const grab = (label)=>{
+    const re = new RegExp('(?:' + label + ')\\s*[:\\-]?\\s*([^\\n]+)', 'i');
+    const m = text.match(re);
+    return (m && m[1]) ? m[1].trim().replace(/\s{2,}/g,' ') : '';
+  };
+  const courseTitle = grab('course\\s*title|course\\s*name');
+  const courseCode = grab('course\\s*code');
+  const section = grab('section');
+  const program = grab('program');
+  const batchLabel = grab('batch\\s*(?:no\\.?|number)?');
+
+  if(courseTitle) courseInfo.course = courseTitle.slice(0,80);
+  if(courseCode) courseInfo.code = courseCode.split(/\s{2,}|\n/)[0].trim().slice(0,20);
+  // prefer an explicit "Batch" field; otherwise Section (e.g. CSE-33-D-A) doubles as batch/section id
+  if(batchLabel) courseInfo.batch = batchLabel.split(/\s{2,}/)[0].trim().slice(0,30);
+  else if(section) courseInfo.batch = section.split(/\s{2,}/)[0].trim().slice(0,30);
+  else if(program) courseInfo.batch = program.split(/\s{2,}/)[0].trim().slice(0,30);
+  updateCourseTag();
+
+  // ---- table rows: "<SL> <ID (letters + number groups)> <Name>" ----
+  // e.g. "12 CSE 033 08378 Taisaw Chak"  or  "12 20221-15-078 Jane Doe"
+  const rowRe = /^(\d{1,3})\s+([A-Za-z]{2,8}(?:\s+\d{1,6}){1,3}|\d{4,12})\s+(.+)$/;
+  const skipRe = /^(course|batch|semester|dept|department|sl\.?\s*no|serial|trimester|program|section|print\s*date|web\s*generated|page\s*\d|\d+\s*of\s*\d+)/i;
+
+  lines.forEach(line=>{
+    if(skipRe.test(line)) return;
+    const m = line.match(rowRe);
+    if(!m) return;
+    const sid = m[2].replace(/\s{2,}/g,' ').trim();
+    // strip stray trailing attendance-column digits (e.g. "Jannatul Naima 1 2 3") from name
+    let name = m[3].replace(/\s{2,}/g,' ').trim();
+    name = name.replace(/(\s+\d{1,2}){2,}\s*$/,'').trim();
+    name = name.replace(/[|,;]+$/,'').trim();
+    if(name.length < 2) return;
+    if(seenIds.has(sid)) return; // dedupe repeated header/rows across pages
+    seenIds.add(sid);
+    found.push({ sid, name });
+  });
+
+  // fallback: looser single-token ID pattern for other roster layouts
+  if(found.length === 0){
+    const idRe = /\b(\d{5,12}|[A-Z]{1,4}\d{3,10})\b/;
+    const nameRe = /[A-Za-z][A-Za-z.\-'’ ]{2,45}[A-Za-z]/;
+    lines.forEach(line=>{
+      if(skipRe.test(line)) return;
+      const idM = line.match(idRe);
+      if(!idM) return;
+      let rest = line.replace(idM[0], ' ').replace(/[|,;]/g,' ').replace(/\s{2,}/g,' ').trim();
+      const nameM = rest.match(nameRe);
+      let name = nameM ? nameM[0].trim() : rest.trim();
+      name = name.replace(/^\d+\.?\s*/,'').trim();
+      if(name.length < 2 || seenIds.has(idM[0])) return;
+      seenIds.add(idM[0]);
+      found.push({ sid: idM[0], name });
+    });
+  }
+
+  if(found.length){
+    students = found.map((f,i)=>({
+      id: 'S'+i, sid: f.sid, name: f.name,
+      batch: courseInfo.batch || '', course: courseInfo.code || ''
+    }));
+  }
+}
+
+function renderRosterTable(){
+  const wrap = document.getElementById('rosterTableWrap');
+  if(students.length===0){
+    wrap.innerHTML = `<div class="empty"><div class="big">No students yet</div>Upload a PDF above, or add rows manually.</div>`;
+    document.getElementById('toStep2Btn').disabled = true;
+    document.getElementById('rosterCount').textContent = '';
+    return;
+  }
+  let rows = students.map((s,i)=>`
+    <tr>
+      <td style="width:36px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;">${i+1}</td>
+      <td><input class="cell" data-i="${i}" data-f="sid" value="${escapeHtml(s.sid)}"></td>
+      <td><input class="cell name-cell" data-i="${i}" data-f="name" value="${escapeHtml(s.name)}"></td>
+      <td><input class="cell" data-i="${i}" data-f="batch" value="${escapeHtml(s.batch)}"></td>
+      <td><input class="cell" data-i="${i}" data-f="course" value="${escapeHtml(s.course)}"></td>
+      <td style="width:40px;"><button class="btn small outline no-print" data-del="${i}">✕</button></td>
+    </tr>`).join('');
+  wrap.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr><th>#</th><th>Student ID</th><th>Name</th><th>Batch</th><th>Course Code</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+
+  wrap.querySelectorAll('input.cell').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const i = parseInt(inp.dataset.i), f = inp.dataset.f;
+      students[i][f] = inp.value;
+      saveState();
+    });
+  });
+  wrap.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      students.splice(parseInt(btn.dataset.del),1);
+      saveState(); renderRosterTable();
+    });
+  });
+
+  document.getElementById('rosterCount').textContent = `${students.length} student(s)`;
+  document.getElementById('toStep2Btn').disabled = false;
+}
+
+document.getElementById('addRowBtn').addEventListener('click', ()=>{
+  students.push({ id:'S'+students.length+'-'+Date.now(), sid:'', name:'', batch: courseInfo.batch||'', course: courseInfo.code||''});
+  saveState(); renderRosterTable();
+});
+document.getElementById('toStep2Btn').addEventListener('click', ()=>goToStep(2));
+
+function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------------- Step 2: Attendance ---------------- */
+function attendancePercent(present){
+  if(!totalClasses || present===undefined || present===null || present==='') return null;
+  return Math.max(0,Math.min(100,(Number(present)/totalClasses)*100));
+}
+function attendanceMarks(pct){
+  if(pct===null) return 0;
+  if(pct>=90) return 10;
+  if(pct>=85) return 9;
+  if(pct>=80) return 8;
+  if(pct>=75) return 7;
+  if(pct>=70) return 6;
+  if(pct>=65) return 5;
+  if(pct>=60) return 4;
+  if(pct>=55) return 3;
+  if(pct>=50) return 2;
+  return 0;
+}
+function renderAttendanceTable(){
+  const wrap=document.getElementById('attnTableWrap');
+  const tc=document.getElementById('totalClassesInput');
+  if(tc) tc.value=totalClasses||'';
+  if(students.length===0){wrap.innerHTML='<div class="empty">No students loaded.</div>';return;}
+  let rows=students.map((s,i)=>{
+    const p=attendance[s.id];
+    const pct=attendancePercent(p);
+    const am=attendanceMarks(pct);
+    return `<tr id="attn-row-${i}" class="${i===attnActiveIdx?'active-row':''}">
+      <td>${i+1}</td><td style="font-family:'JetBrains Mono',monospace;">${escapeHtml(s.sid)}</td>
+      <td>${escapeHtml(s.name)}</td>
+      <td class="num-cell" style="width:120px"><input class="cell attn-input" data-i="${i}" type="number" min="0" max="${totalClasses||999}" step="1" value="${p!==undefined?p:''}" placeholder="Present"></td>
+      <td>${pct===null?'—':pct.toFixed(1)+'%'}</td><td><strong>${pct===null?'—':am+'/10'}</strong></td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML=`<table><thead><tr><th>#</th><th>ID</th><th>Name</th><th>Present / ${totalClasses||'classes'}</th><th>Attendance %</th><th>Marks /10</th></tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.querySelectorAll('.attn-input').forEach(inp=>{
+    inp.addEventListener('input',()=>{
+      const i=+inp.dataset.i, v=inp.value===''?undefined:Math.max(0,Math.min(totalClasses||999,parseInt(inp.value,10)||0));
+      attendance[students[i].id]=v; saveState();
+      const keep=i; renderAttendanceTable(); setAttnActive(keep,false);
+      updateAttendanceSummary();
+    });
+    inp.addEventListener('keydown',e=>{
+      const i=+inp.dataset.i;
+      if(e.key==='Enter'||e.key==='ArrowDown'){e.preventDefault();setAttnActive(Math.min(i+1,students.length-1));}
+      else if(e.key==='ArrowUp'){e.preventDefault();setAttnActive(Math.max(i-1,0));}
+    });
+    inp.addEventListener('focus',()=>setAttnActive(+inp.dataset.i,false));
+  });
+  updateAttendanceSummary();
+}
+function updateAttendanceSummary(){
+  const el=document.getElementById('attnSummary'); if(!el)return;
+  const vals=students.map(s=>attendancePercent(attendance[s.id])).filter(v=>v!==null);
+  const avg=vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):'—';
+  const complete=students.filter(s=>attendance[s.id]!==undefined).length;
+  el.innerHTML=`<div class="attn-summary">
+    <div class="attn-card"><b>${totalClasses||'—'}</b><div class="hint">Classes held</div></div>
+    <div class="attn-card"><b>${complete}/${students.length}</b><div class="hint">Attendance entered</div></div>
+    <div class="attn-card"><b>${avg}${avg==='—'?'':'%'}</b><div class="hint">Average attendance</div></div>
+  </div>`;
+}
+function setAttnActive(i,focusInput=true){
+  attnActiveIdx=i;
+  document.querySelectorAll('#attnTableWrap tr').forEach(r=>r.classList.remove('active-row'));
+  const row=document.getElementById('attn-row-'+i);
+  if(row){row.classList.add('active-row');row.scrollIntoView({block:'nearest'});
+    if(focusInput){const inp=row.querySelector('input');if(inp){inp.focus();inp.select();}}}
+}
+document.getElementById('applyClassesBtn').addEventListener('click',()=>{
+  const n=parseInt(document.getElementById('totalClassesInput').value,10);
+  if(!n||n<1){alert('Enter the total number of classes held.');return;}
+  totalClasses=n; saveState(); renderAttendanceTable();
+});
+document.getElementById('totalClassesInput').addEventListener('change',()=>{
+  const n=parseInt(document.getElementById('totalClassesInput').value,10);
+  if(n>0){totalClasses=n;saveState();renderAttendanceTable();}
+});
+const attnMicBtn=document.getElementById('attnMicBtn'), attnStatus=document.getElementById('attnStatus'), attnHeard=document.getElementById('attnHeard');
+attnMicBtn.addEventListener('click',()=>{
+  if(VoiceEngine.isListening('attn')){VoiceEngine.stop();return;}
+  if(!students.length)return;
+  VoiceEngine.start('attn',handleAttnVoice,attnStatus,attnMicBtn,attnHeard);
+});
+function handleAttnVoice(transcript){
+  if(!totalClasses){attnStatus.textContent='Set total classes first';return;}
+  const vals=voiceTokens(transcript);
+  let moved=false;
+  for(const val of vals){
+    if(val==='NEXT'){attnActiveIdx=Math.min(attnActiveIdx+1,students.length-1);continue;}
+    if(typeof val!=='number')continue;
+    const s=students[attnActiveIdx];
+    attendance[s.id]=Math.max(0,Math.min(totalClasses,Math.round(val)));
+    attnActiveIdx=Math.min(attnActiveIdx+1,students.length-1); moved=true;
+  }
+  if(moved){saveState();renderAttendanceTable();setAttnActive(attnActiveIdx,false);}
+}
+document.getElementById('backTo1Btn').addEventListener('click',()=>goToStep(1));
+document.getElementById('toStep3Btn').addEventListener('click',()=>goToStep(3));
+
+/* ---------------- Step 3: Marks ---------------- */
+function renderMarksTable(){
+  const wrap = document.getElementById('marksTableWrap');
+  if(students.length===0){ wrap.innerHTML = `<div class="empty">No students loaded.</div>`; return; }
+  let rows = students.map((s,i)=>{
+    const m = marks[s.id] || {};
+    const cell = (f)=>`<td class="num-cell"><input class="cell marks-input" data-i="${i}" data-f="${f}" type="number" min="0" max="${FIELD_CAPS[f]}" step="0.5" value="${m[f]!==undefined?m[f]:''}"></td>`;
+    return `<tr id="marks-row-${i}" class="${i===marksActiveIdx?'active-row':''}">
+      <td style="width:34px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;">${i+1}</td>
+      <td style="font-family:'JetBrains Mono',monospace;">${escapeHtml(s.sid)}</td>
+      <td>${escapeHtml(s.name)}</td>
+      ${cell('ct1')}${cell('ct2')}${cell('asgn1')}${cell('asgn2')}${cell('mid')}${cell('final')}
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table><thead><tr>
+    <th>#</th><th>Student ID</th><th>Name</th><th>CT1</th><th>CT2</th><th>Assignment 1</th><th>Assignment 2</th><th>Mid</th><th>Final</th>
+  </tr></thead><tbody>${rows}</tbody></table>`;
+
+  wrap.querySelectorAll('.marks-input').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const i = parseInt(inp.dataset.i), f = inp.dataset.f;
+      const sid = students[i].id;
+      marks[sid] = marks[sid] || {};
+      marks[sid][f] = inp.value===''? undefined : parseFloat(inp.value);
+      saveState();
+    });
+    inp.addEventListener('keydown', e=>{
+      const i = parseInt(inp.dataset.i), f = inp.dataset.f;
+      if(e.key==='Enter'){
+        e.preventDefault();
+        setMarksActive(Math.min(i+1, students.length-1));
+      } else if(e.key==='ArrowDown'){
+        e.preventDefault();
+        const ni = Math.min(i+1, students.length-1);
+        marksActiveIdx = ni;
+        const next = wrap.querySelector(`.marks-input[data-i="${ni}"][data-f="${f}"]`);
+        if(next){ next.focus(); next.select(); }
+        highlightMarksRow(ni);
+      } else if(e.key==='ArrowUp'){
+        e.preventDefault();
+        const ni = Math.max(i-1, 0);
+        marksActiveIdx = ni;
+        const prev = wrap.querySelector(`.marks-input[data-i="${ni}"][data-f="${f}"]`);
+        if(prev){ prev.focus(); prev.select(); }
+        highlightMarksRow(ni);
+      }
+    });
+    inp.addEventListener('focus', ()=> setMarksActive(parseInt(inp.dataset.i), false));
+  });
+}
+function setMarksActive(i, focusInput=true){
+  marksActiveIdx = i;
+  document.querySelectorAll('#marksTableWrap tr').forEach(r=>r.classList.remove('active-row'));
+  const row = document.getElementById('marks-row-'+i);
+  if(row){
+    row.classList.add('active-row');
+    row.scrollIntoView({block:'nearest'});
+    if(focusInput){
+      const field = document.getElementById('fieldSelect').value;
+      const inp = row.querySelector(`input[data-f="${field}"]`);
+      if(inp){ inp.focus(); inp.select(); }
+    }
+  }
+}
+function highlightMarksRow(i){
+  document.querySelectorAll('#marksTableWrap tr').forEach(r=>r.classList.remove('active-row'));
+  const row = document.getElementById('marks-row-'+i);
+  if(row){ row.classList.add('active-row'); row.scrollIntoView({block:'nearest'}); }
+}
+
+const marksMicBtn = document.getElementById('marksMicBtn');
+const marksStatus = document.getElementById('marksStatus');
+const marksHeard = document.getElementById('marksHeard');
+marksMicBtn.addEventListener('click', ()=>{
+  if(VoiceEngine.isListening('marks')){ VoiceEngine.stop(); return; }
+  if(students.length===0) return;
+  VoiceEngine.start('marks', handleMarksVoice, marksStatus, marksMicBtn, marksHeard);
+  const field = document.getElementById('fieldSelect').selectedOptions[0].text;
+  marksStatus.textContent = 'Listening — ' + field; marksStatus.classList.add('live');
+});
+document.getElementById('fieldSelect').addEventListener('change', ()=>{
+  if(VoiceEngine.isListening('marks')){
+    const field = document.getElementById('fieldSelect').selectedOptions[0].text;
+    marksStatus.textContent = 'Listening — ' + field;
+  }
+});
+function handleMarksVoice(transcript){
+  if(students.length===0) return;
+  const field = document.getElementById('fieldSelect').value;
+  const cap = FIELD_CAPS[field];
+  const values = voiceTokens(transcript);
+  let changed = false;
+
+  for(const val of values){
+    if(val===null || val==='NEXT') continue;
+    const s = students[marksActiveIdx];
+    if(!s) break;
+    marks[s.id] = marks[s.id] || {};
+    marks[s.id][field] = Math.max(0, Math.min(cap, val));
+    marksActiveIdx = Math.min(marksActiveIdx+1, students.length-1);
+    changed = true;
+  }
+
+  if(changed) saveState();
+  renderMarksTable();
+  setMarksActive(marksActiveIdx, false);
+  const field2 = document.getElementById('fieldSelect').selectedOptions[0].text;
+  marksStatus.textContent = 'Listening — ' + field2;
+}
+document.getElementById('backTo2Btn').addEventListener('click', ()=>goToStep(2));
+document.getElementById('toStep4Btn').addEventListener('click', ()=>goToStep(4));
+
+/* ---------------- Step 4: Marksheet ---------------- */
+function gradeFor(total){
+  if(total>=80) return {g:'A+', gp:4.00};
+  if(total>=75) return {g:'A', gp:3.75};
+  if(total>=70) return {g:'A-', gp:3.50};
+  if(total>=65) return {g:'B+', gp:3.25};
+  if(total>=60) return {g:'B', gp:3.00};
+  if(total>=55) return {g:'B-', gp:2.75};
+  if(total>=50) return {g:'C+', gp:2.50};
+  if(total>=45) return {g:'C', gp:2.25};
+  if(total>=40) return {g:'D', gp:2.00};
+  return {g:'F', gp:0.00};
+}
+function computeRow(s){
+  const m=marks[s.id]||{};
+  const ct1=m.ct1||0, ct2=m.ct2||0, mid=m.mid||0, final=m.final||0, a1=m.asgn1||0, a2=m.asgn2||0;
+  const ct=ct1+ct2, asgn=a1+a2;
+  const att=attendance[s.id];
+  const attPct=attendancePercent(att);
+  const attMarks=attendanceMarks(attPct);
+  const total=ct+mid+final+asgn+attMarks;
+  const {g,gp}=gradeFor(total);
+  const status=total>=40?'Pass':'Fail';
+  return {ct,ct1,ct2,mid,final,asgn,a1,a2,total,att,attPct,attMarks,g,gp,status};
+}
+function renderMarksheet(){
+  const wrap=document.getElementById('marksheetWrap'), statsWrap=document.getElementById('statsGrid');
+  if(!students.length){wrap.innerHTML='<div class="empty">No students loaded.</div>';statsWrap.innerHTML='';return;}
+  const computed=students.map(s=>({s,r:computeRow(s)}));
+  const totals=computed.map(c=>c.r.total);
+  const avg=(totals.reduce((a,b)=>a+b,0)/totals.length).toFixed(1);
+  const high=Math.max(...totals), low=Math.min(...totals);
+  const passCount=computed.filter(c=>c.r.status==='Pass').length;
+  statsWrap.innerHTML=`
+    <div class="stat-card"><div class="v">${computed.length}</div><div class="l">Students</div></div>
+    <div class="stat-card"><div class="v">${avg}</div><div class="l">Class Average</div></div>
+    <div class="stat-card"><div class="v">${high}</div><div class="l">Highest</div></div>
+    <div class="stat-card"><div class="v">${low}</div><div class="l">Lowest</div></div>
+    <div class="stat-card"><div class="v">${((passCount/computed.length)*100).toFixed(0)}%</div><div class="l">Pass Rate (${passCount}/${computed.length})</div></div>`;
+  const head=`<div class="report-head">
+    <h2>${escapeHtml(courseInfo.course||'Semester Marksheet')}</h2>
+    <p>Course Code: <strong>${escapeHtml(courseInfo.code||'—')}</strong> &nbsp; | &nbsp; Batch/Section: <strong>${escapeHtml(courseInfo.batch||'—')}</strong></p>
+    <p>Result Marksheet · Attendance ${totalClasses?totalClasses+' classes':''}</p>
+  </div>`;
+  let rows=computed.map((c,i)=>{
+    const s=c.s,r=c.r;
+    return `<tr><td>${i+1}</td><td>${escapeHtml(s.sid)}</td><td>${escapeHtml(s.name)}</td>
+      <td>${r.ct1}/5</td><td>${r.ct2}/5</td><td>${r.ct}/10</td>
+      <td>${r.a1}/5</td><td>${r.a2}/5</td><td>${r.asgn}/10</td>
+      <td>${r.mid}/30</td><td>${r.final}/40</td>
+      <td>${r.attPct===null?'—':r.attPct.toFixed(1)+'%'}</td><td>${r.attMarks}/10</td>
+      <td><strong>${r.total}/100</strong></td><td class="grade-chip">${r.g}</td>
+      <td><span class="badge ${r.status==='Pass'?'pass':'fail'}">${r.status}</span></td></tr>`;
+  }).join('');
+  wrap.innerHTML=head+`<table><thead><tr>
+    <th>#</th><th>ID</th><th>Name</th><th>CT1 (5)</th><th>CT2 (5)</th><th>CT (10)</th>
+    <th>Asgn1 (5)</th><th>Asgn2 (5)</th><th>Asgn (10)</th><th>Mid (30)</th><th>Final (40)</th>
+    <th>Attendance %</th><th>Att. Marks</th><th>Total (100)</th><th>Grade</th><th>Result</th>
+  </tr></thead><tbody>${rows}</tbody></table>`;
+  renderTop3Report();
+}
+function renderTop3Report(){
+  const el=document.getElementById('topPerformers'); if(!el)return;
+  const data=students.map(s=>({s,r:computeRow(s)}));
+
+  const topTotal=[...data].sort((a,b)=>b.r.total-a.r.total).slice(0,3);
+  const topCT=[...data].sort((a,b)=>(b.r.ct1+b.r.ct2)-(a.r.ct1+a.r.ct2)).slice(0,3);
+  const topAsg=[...data].sort((a,b)=>b.r.asgn-a.r.asgn).slice(0,3);
+
+  const list=(arr,score)=>`<ol>${arr.map(x=>`<li><b>${score(x)}</b> — ${escapeHtml(x.s.name)}</li>`).join('')}</ol>`;
+
+  // For every assessment component, show Highest, Class Average ("Mid"), and Lowest.
+  const components = [
+    {key:'ct1', label:'CT 1', cap:5},
+    {key:'ct2', label:'CT 2', cap:5},
+    {key:'asgn1', label:'Assignment 1', cap:5},
+    {key:'asgn2', label:'Assignment 2', cap:5},
+    {key:'mid', label:'Mid Exam', cap:30},
+    {key:'final', label:'Final Exam', cap:40}
+  ];
+
+  const perf = components.map(c=>{
+    const vals=data.map(x=>({name:x.s.name, value:Number((marks[x.s.id]||{})[c.key])}))
+      .filter(x=>Number.isFinite(x.value));
+    if(!vals.length){
+      return `<div class="performance-card">
+        <div class="component">${c.label} <span style="font-weight:400;color:var(--ink-soft)">/ ${c.cap}</span></div>
+        <div class="tp-empty">No marks entered yet.</div>
+      </div>`;
+    }
+    const high=Math.max(...vals.map(x=>x.value));
+    const low=Math.min(...vals.map(x=>x.value));
+    const avg=vals.reduce((a,x)=>a+x.value,0)/vals.length;
+    const highStudent=vals.find(x=>x.value===high)?.name||'';
+    const lowStudent=vals.find(x=>x.value===low)?.name||'';
+
+    return `<div class="performance-card">
+      <div class="component">${c.label} <span style="font-weight:400;color:var(--ink-soft)">/ ${c.cap}</span></div>
+      <div class="performance-values">
+        <div class="performance-value">
+          <span class="label">Highest</span>
+          <span class="score">${high}</span>
+          <span class="student" title="${escapeHtml(highStudent)}">${escapeHtml(highStudent)}</span>
+        </div>
+        <div class="performance-value">
+          <span class="label">Average</span>
+          <span class="score">${avg.toFixed(2)}</span>
+          <span class="student">${vals.length} entered</span>
+        </div>
+        <div class="performance-value">
+          <span class="label">Lowest</span>
+          <span class="score">${low}</span>
+          <span class="student" title="${escapeHtml(lowStudent)}">${escapeHtml(lowStudent)}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML=`
+    <div class="performance-summary">
+      <h3>Assessment Performance — Highest, Average & Lowest</h3>
+      <div class="performance-grid">${perf}</div>
+    </div>
+
+    <h3 style="font-family:Georgia,'Times New Roman',serif;font-size:1.05rem;margin:0 0 10px;">Top 3 Students</h3>
+    <div class="top3-report">
+      <div class="top3-card"><h4>Overall Result</h4>${list(topTotal,x=>x.r.total+'/100')}</div>
+      <div class="top3-card"><h4>CT Total</h4>${list(topCT,x=>x.r.ct+'/10')}</div>
+      <div class="top3-card"><h4>Assignment Total</h4>${list(topAsg,x=>x.r.asgn+'/10')}</div>
+    </div>`;
+}
+
+document.getElementById('backTo3Btn').addEventListener('click', ()=>goToStep(3));
+
+document.getElementById('csvBtn').addEventListener('click',()=>{
+  const header=['#','Student ID','Name','CT1(5)','CT2(5)','CT(10)','Asgn1(5)','Asgn2(5)','Asgn(10)','Mid(30)','Final(40)','Classes Present','Attendance %','Attendance Marks(10)','Total(100)','Grade','Result'];
+  const lines=[header.join(',')];
+  students.forEach((s,i)=>{
+    const r=computeRow(s);
+    lines.push([i+1,s.sid,`"${(s.name||'').replace(/"/g,'""')}"`,r.ct1,r.ct2,r.ct,r.mid,r.final,r.a1,r.a2,r.asgn,
+      r.att??'',r.attPct===null?'':r.attPct.toFixed(1),r.attMarks,r.total,r.g,r.status].join(','));
+  });
+  const blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob), a=document.createElement('a');
+  a.href=url;a.download=`marksheet_${courseInfo.code||'course'}.csv`;a.click();URL.revokeObjectURL(url);
+});
+document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+
+/* ---------------- Init ---------------- */
+(async function init(){
+  await loadState();
+  updateCourseTag();
+  const tc=document.getElementById('totalClassesInput'); if(tc) tc.value=totalClasses||'';
+  renderRosterTable();
+  goToStep(1);
+})();
+</script>
+</body>
+</html>
