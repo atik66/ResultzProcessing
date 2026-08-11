@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gradebook — Class Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --ink:#1E2A3A;
+    --ink-soft:#4A5A6A;
+    --paper:#FBF8F2;
+    --paper-line:#E4DDCB;
+    --chalk:#2F4F42;
+    --chalk-dark:#20362D;
+    --gold:#C9A24B;
+    --gold-soft:#F1E4C0;
+    --pass:#3A7D44;
+    --pass-bg:#E6F0E3;
+    --fail:#B84C3C;
+    --fail-bg:#FBEAE6;
+    --white:#FFFFFF;
+    --radius:10px;
+    --shadow:0 2px 10px rgba(30,42,58,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px);
+    background-size: 100% 42px;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  .app{ max-width:1180px; margin:0 auto; padding:28px 20px 80px; }
+
+  /* Header */
+  .masthead{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--chalk); color:var(--paper);
+    border-radius:var(--radius);
+    padding:22px 28px;
+    box-shadow:var(--shadow);
+    background-image: radial-gradient(circle at 90% -10%, rgba(201,162,75,0.25), transparent 55%);
+  }
+  .masthead h1{
+    font-family:'Fraunces',serif; font-weight:600; font-size:1.7rem; margin:0;
+    letter-spacing:0.2px;
+  }
+  .masthead .tagline{ font-size:0.82rem; color:var(--gold-soft); margin-top:4px; letter-spacing:0.3px;}
+  .masthead .course-tag{
+    font-family:'JetBrains Mono',monospace; font-size:0.78rem;
+    background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2);
+    padding:8px 14px; border-radius:8px; text-align:right; line-height:1.5;
+  }
+
+  /* Stepper */
+  .stepper{ display:flex; gap:8px; margin:22px 0 24px; }
+  .step-tab{
+    flex:1; text-align:left; cursor:pointer; user-select:none;
+    background:var(--white); border:1px solid var(--paper-line);
+    border-radius:var(--radius); padding:12px 16px;
+    transition:all .15s ease; position:relative;
+  }
+  .step-tab .num{
+    font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--ink-soft);
+    display:block; margin-bottom:2px;
+  }
+  .step-tab .label{ font-family:'Fraunces',serif; font-weight:600; font-size:0.98rem; }
+  .step-tab.active{
+    background:var(--chalk); border-color:var(--chalk);
+  }
+  .step-tab.active .num{ color:var(--gold); }
+  .step-tab.active .label{ color:var(--paper); }
+  .step-tab.done::after{
+    content:"✓"; position:absolute; top:10px; right:12px; color:var(--pass); font-weight:700;
+  }
+  .step-tab:not(.active):hover{ border-color:var(--gold); }
+
+  /* Panels */
+  .panel{
+    background:var(--white); border:1px solid var(--paper-line);
+    border-radius:var(--radius); padding:26px; box-shadow:var(--shadow);
+    margin-bottom:20px;
+  }
+  .panel h2{ font-family:'Fraunces',serif; font-size:1.3rem; margin:0 0 6px; }
+  .panel .sub{ color:var(--ink-soft); font-size:0.9rem; margin-bottom:18px; }
+
+  /* Buttons */
+  button{ font-family:'Inter',sans-serif; cursor:pointer; border:none; border-radius:8px; }
+  .btn{
+    background:var(--chalk); color:var(--paper); padding:10px 18px;
+    font-weight:600; font-size:0.88rem; transition:background .15s;
+  }
+  .btn:hover{ background:var(--chalk-dark); }
+  .btn:disabled{ background:#ccc; cursor:not-allowed; }
+  .btn.gold{ background:var(--gold); color:var(--chalk-dark); }
+  .btn.gold:hover{ background:#b78f3c; }
+  .btn.outline{ background:transparent; color:var(--chalk); border:1.5px solid var(--chalk); }
+  .btn.outline:hover{ background:var(--chalk); color:var(--paper); }
+  .btn.small{ padding:6px 12px; font-size:0.78rem; }
+  .mic-btn{
+    width:38px; height:38px; border-radius:50%; background:var(--paper);
+    border:1.5px solid var(--chalk); font-size:1rem; display:inline-flex;
+    align-items:center; justify-content:center; transition:all .15s;
+  }
+  .mic-btn.listening{ background:var(--fail); border-color:var(--fail); color:white; animation:pulse 1s infinite; }
+  @keyframes pulse{ 0%{box-shadow:0 0 0 0 rgba(184,76,60,0.5);} 70%{box-shadow:0 0 0 10px rgba(184,76,60,0);} 100%{box-shadow:0 0 0 0 rgba(184,76,60,0);} }
+
+  /* Upload zone */
+  .dropzone{
+    border:2px dashed var(--paper-line); border-radius:var(--radius);
+    padding:40px 20px; text-align:center; color:var(--ink-soft);
+    background:var(--paper); transition:border-color .15s;
+  }
+  .dropzone.drag{ border-color:var(--gold); background:var(--gold-soft); }
+  .dropzone input{ display:none; }
+
+  /* Tables */
+  table{ width:100%; border-collapse:collapse; font-size:0.88rem; }
+  thead th{
+    text-align:left; font-family:'JetBrains Mono',monospace; font-size:0.72rem;
+    text-transform:uppercase; letter-spacing:0.5px; color:var(--ink-soft);
+    border-bottom:2px solid var(--ink); padding:10px 8px; background:var(--paper);
+    position:sticky; top:0;
+  }
+  tbody td{ padding:8px; border-bottom:1px solid var(--paper-line); vertical-align:middle; }
+  tbody tr:hover{ background:#FAF6ED; }
+  tbody tr.active-row{ background:var(--gold-soft); }
+  .tbl-wrap{ max-height:520px; overflow:auto; border:1px solid var(--paper-line); border-radius:8px; }
+  input.cell{
+    width:100%; padding:7px 8px; border:1px solid var(--paper-line); border-radius:6px;
+    font-family:'JetBrains Mono',monospace; font-size:0.85rem; background:var(--white); color:var(--ink);
+  }
+  input.cell:focus{ outline:none; border-color:var(--gold); box-shadow:0 0 0 2px var(--gold-soft); }
+  input.name-cell{ font-family:'Inter',sans-serif; }
+  td.num-cell input{ text-align:center; }
+
+  .toolbar{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+  .toolbar .grow{ flex:1; }
+  select.field-select{
+    padding:9px 12px; border-radius:8px; border:1.5px solid var(--chalk); font-weight:600;
+    font-family:'Inter',sans-serif; background:var(--white); color:var(--chalk);
+  }
+  .status-pill{
+    display:inline-flex; align-items:center; gap:6px; font-size:0.8rem; padding:6px 12px;
+    border-radius:20px; background:var(--paper); border:1px solid var(--paper-line); color:var(--ink-soft);
+  }
+  .status-pill.live{ background:var(--fail-bg); color:var(--fail); border-color:var(--fail); }
+
+  .nav-row{ display:flex; justify-content:space-between; margin-top:6px; }
+
+  .badge{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:0.78rem; padding:3px 9px; border-radius:6px; }
+  .badge.pass{ background:var(--pass-bg); color:var(--pass); }
+  .badge.fail{ background:var(--fail-bg); color:var(--fail); }
+  .grade-chip{ font-family:'Fraunces',serif; font-weight:700; }
+
+  .stats-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:20px; }
+  .stat-card{
+    background:var(--paper); border:1px solid var(--paper-line); border-radius:10px; padding:14px 16px;
+  }
+  .stat-card .v{ font-family:'Fraunces',serif; font-size:1.6rem; font-weight:700; color:var(--chalk); }
+  .stat-card .l{ font-size:0.75rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.4px; }
+
+  .hint{ font-size:0.78rem; color:var(--ink-soft); margin-top:6px; }
+
+  .tp-batch{ margin-bottom:16px; border:1px solid var(--paper-line); border-radius:10px; overflow:hidden; }
+  .tp-batch h3{
+    font-family:'Fraunces',serif; font-size:1rem; margin:0; padding:10px 16px;
+    background:var(--chalk); color:var(--paper);
+  }
+  .tp-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:0; }
+  .tp-col{ padding:12px 16px; border-left:1px solid var(--paper-line); }
+  .tp-col:first-child{ border-left:none; }
+  .tp-col .tp-label{ font-family:'JetBrains Mono',monospace; font-size:0.7rem; text-transform:uppercase; color:var(--ink-soft); letter-spacing:0.5px; margin-bottom:8px; }
+  .tp-col ol{ margin:0; padding-left:18px; font-size:0.85rem; }
+  .tp-col li{ margin-bottom:4px; }
+  .tp-col li b{ color:var(--chalk); font-family:'JetBrains Mono',monospace; }
+  .tp-empty{ color:var(--ink-soft); font-size:0.8rem; font-style:italic; }
+  .empty{ text-align:center; padding:50px 20px; color:var(--ink-soft); }
+  .empty .big{ font-family:'Fraunces',serif; font-size:1.15rem; color:var(--ink); margin-bottom:6px; }
+
+  @media print{
+    body{ background:white; }
+    .masthead, .stepper, .toolbar, .nav-row, .no-print, .dropzone{ display:none !important; }
+    .panel{ box-shadow:none; border:none; padding:0; }
+    #panel-4{ display:block !important; }
+    .step-tab, .app > .panel:not(#panel-4){ display:none !important; }
+  }
+  @media (max-width:720px){
+    .stepper{ flex-direction:column; }
+    .masthead{ flex-direction:column; align-items:flex-start; gap:12px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="masthead">
+    <div>
+      <h1>Gradebook</h1>
+      <div class="tagline">Roster → Attendance → Marks → Result</div>
+    </div>
+    <div class="course-tag" id="courseTag">Course: — · Code: — · Batch: —</div>
+  </div>
+
+  <div class="stepper no-print">
+    <div class="step-tab active" data-step="1"><span class="num">Step 01</span><span class="label">Student Sheet</span></div>
+    <div class="step-tab" data-step="2"><span class="num">Step 02</span><span class="label">Attendance</span></div>
+    <div class="step-tab" data-step="3"><span class="num">Step 03</span><span class="label">Enter Marks</span></div>
+    <div class="step-tab" data-step="4"><span class="num">Step 04</span><span class="label">Marksheet</span></div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="panel" id="panel-1">
+    <h2>Student Sheet</h2>
+    <div class="sub">Upload the class list PDF. We'll pull out Student ID, Name, Batch and Course Code — check the table below and fix anything before moving on.</div>
+
+    <div class="dropzone no-print" id="dropzone">
+      <div>📄 Drop a PDF here, or</div>
+      <button class="btn gold" style="margin-top:10px" id="pickFileBtn">Choose PDF file</button>
+      <input type="file" id="fileInput" accept="application/pdf">
+      <div class="hint" id="fileStatus">No file loaded yet.</div>
+    </div>
+
+    <div class="toolbar no-print" style="margin-top:18px; align-items:flex-end;">
+      <div>
+        <label class="hint">Course Name</label><br>
+        <input class="cell" id="courseNameInput" placeholder="e.g. Data Structures" style="width:220px;">
+      </div>
+      <div>
+        <label class="hint">Course Code</label><br>
+        <input class="cell" id="courseCodeInput" placeholder="e.g. CSE-221" style="width:140px;">
+      </div>
+      <div>
+        <label class="hint">Batch/Section</label><br>
+        <input class="cell" id="courseBatchInput" placeholder="e.g. CSE-33-D" style="width:140px;">
+      </div>
+    </div>
+
+    <div style="margin-top:20px;" id="rosterTableWrap"></div>
+
+    <div class="toolbar no-print" style="margin-top:16px;">
+      <button class="btn outline small" id="addRowBtn">+ Add student row</button>
+      <div class="grow"></div>
+      <span class="hint" id="rosterCount"></span>
+    </div>
+
+    <div class="nav-row no-print">
+      <span></span>
+      <button class="btn" id="toStep2Btn" disabled>Continue to Attendance →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="panel" id="panel-2" style="display:none;">
+    <h2>Attendance Sheet</h2>
+    <div class="sub">Enter how many classes have been held in total, then type or speak how many classes each student attended. The Marks/10 column is calculated automatically from the % table below — but you can always click into it and type your own number instead.</div>
+
+    <div class="toolbar no-print" style="margin-bottom:10px;">
+      <label class="hint" style="margin-right:-6px;">Total classes held:</label>
+      <input type="number" min="1" step="1" id="totalClassesInput" class="cell" style="width:90px;" placeholder="e.g. 30">
+      <span class="hint" id="totalClassesHint"></span>
+    </div>
+
+    <div class="toolbar no-print">
+      <button class="btn gold mic-btn" id="attnMicBtn" title="Start voice attendance">🎤</button>
+      <span class="status-pill" id="attnStatus">Voice off</span>
+      <span class="hint" id="attnHeard" style="min-width:120px;"></span>
+      <div class="grow"></div>
+      <span class="hint">Say a number, or "next" / "skip"</span>
+    </div>
+
+    <div class="tbl-wrap" id="attnTableWrap"></div>
+
+    <details style="margin-top:14px;">
+      <summary class="hint" style="cursor:pointer;">Attendance % → Marks table</summary>
+      <div class="tp-grid" style="grid-template-columns:repeat(2,1fr); margin-top:8px;">
+        <table style="font-size:0.82rem;"><tbody>
+          <tr><td>90–100%</td><td><b>10</b></td></tr>
+          <tr><td>85–89%</td><td><b>9</b></td></tr>
+          <tr><td>80–84%</td><td><b>8</b></td></tr>
+          <tr><td>75–79%</td><td><b>7</b></td></tr>
+          <tr><td>70–74%</td><td><b>6</b></td></tr>
+        </tbody></table>
+        <table style="font-size:0.82rem;"><tbody>
+          <tr><td>65–69%</td><td><b>5</b></td></tr>
+          <tr><td>60–64%</td><td><b>4</b></td></tr>
+          <tr><td>55–59%</td><td><b>3</b></td></tr>
+          <tr><td>50–54%</td><td><b>2</b></td></tr>
+          <tr><td>Below 50%</td><td><b>0</b></td></tr>
+        </tbody></table>
+      </div>
+    </details>
+
+    <div class="nav-row no-print">
+      <button class="btn outline" id="backTo1Btn">← Back</button>
+      <button class="btn" id="toStep3Btn">Continue to Marks →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="panel" id="panel-3" style="display:none;">
+    <h2>Enter Marks</h2>
+    <div class="sub">Type directly into the table, or pick a field, click the mic, and speak the number — it fills in and jumps to the next student. Made a mistake earlier? Click that cell and type over it — use ↑/↓ to move between rows without losing your place.</div>
+
+    <div class="toolbar no-print">
+      <label class="hint" style="margin-right:-6px;">Field:</label>
+      <select class="field-select" id="fieldSelect">
+        <option value="ct1">CT1 (0–5)</option>
+        <option value="ct2">CT2 (0–5)</option>
+        <option value="mid">Mid (0–30)</option>
+        <option value="final">Final (0–40)</option>
+        <option value="asgn1">Assignment 1 (0–5)</option>
+        <option value="asgn2">Assignment 2 (0–5)</option>
+      </select>
+      <button class="btn gold mic-btn" id="marksMicBtn" title="Start voice marks entry">🎤</button>
+      <span class="status-pill" id="marksStatus">Voice off</span>
+      <span class="hint" id="marksHeard" style="min-width:120px;"></span>
+      <div class="grow"></div>
+      <span class="hint">Say a number, or "next" / "skip"</span>
+    </div>
+
+    <div class="tbl-wrap" id="marksTableWrap"></div>
+
+    <div class="nav-row no-print">
+      <button class="btn outline" id="backTo2Btn">← Back</button>
+      <button class="btn" id="toStep4Btn">Generate Marksheet →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="panel" id="panel-4" style="display:none;">
+    <div class="report-header" id="reportHeader" style="margin-bottom:14px;">
+      <h2 style="margin-bottom:2px;">Semester Marksheet</h2>
+      <div class="hint" id="reportCourseLine" style="font-size:0.92rem;"></div>
+    </div>
+    <div class="sub">CT1+CT2 = 10 · Mid = 30 · Final = 40 · Assignment 1+2 = 10 · Total = 90 (Attendance shown separately, not counted in Total)</div>
+
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <div id="topPerformers" style="margin-bottom:22px;"></div>
+
+    <div class="toolbar no-print">
+      <button class="btn outline small" id="csvBtn">⬇ Download CSV</button>
+      <button class="btn outline small" id="printBtn">🖨 Print</button>
+      <div class="grow"></div>
+    </div>
+
+    <div class="tbl-wrap" id="marksheetWrap"></div>
+
+    <div class="nav-row no-print">
+      <button class="btn outline" id="backTo3Btn">← Back</button>
+      <span></span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ---------------- State ---------------- */
+let students = [];         // {id, sid, name, batch, course}
+let attendance = {};        // sid -> number 0-10
+let marks = {};              // sid -> {ct1,ct2,mid,final,asgn1,asgn2}
+let currentStep = 1;
+let attnActiveIdx = 0;
+let marksActiveIdx = 0;
+let courseInfo = { course:'', code:'', batch:'', totalClasses:'' };
+
+const FIELD_CAPS = { ct1:5, ct2:5, mid:30, final:40, asgn1:5, asgn2:5 };
+const MAX_TOTAL = FIELD_CAPS.ct1 + FIELD_CAPS.ct2 + FIELD_CAPS.mid + FIELD_CAPS.final + FIELD_CAPS.asgn1 + FIELD_CAPS.asgn2; // 90
+
+/* Attendance % -> marks/10 table (based on classes attended out of classes held) */
+function attendanceMarkFromPercent(pct){
+  if(pct===null || pct===undefined || isNaN(pct)) return undefined;
+  if(pct>=90) return 10;
+  if(pct>=85) return 9;
+  if(pct>=80) return 8;
+  if(pct>=75) return 7;
+  if(pct>=70) return 6;
+  if(pct>=65) return 5;
+  if(pct>=60) return 4;
+  if(pct>=55) return 3;
+  if(pct>=50) return 2;
+  return 0;
+}
+/* attendance[sid] = { present:number, override:number|null } */
+function getAttendanceMark(sid){
+  const rec = attendance[sid];
+  if(!rec) return { mark:undefined, pct:undefined, isOverride:false };
+  const total = parseFloat(courseInfo.totalClasses);
+  const pct = (total>0 && rec.present!==undefined && rec.present!==null && rec.present!=='')
+    ? (parseFloat(rec.present)/total)*100 : undefined;
+  const auto = attendanceMarkFromPercent(pct);
+  const hasOverride = rec.override!==undefined && rec.override!==null && rec.override!=='';
+  return { mark: hasOverride ? parseFloat(rec.override) : auto, pct, isOverride: hasOverride, auto };
+}
+
+/* ---------------- Storage ---------------- */
+async function saveState(){
+  try{
+    await window.storage.set('gb-students', JSON.stringify(students));
+    await window.storage.set('gb-attendance', JSON.stringify(attendance));
+    await window.storage.set('gb-marks', JSON.stringify(marks));
+    await window.storage.set('gb-course', JSON.stringify(courseInfo));
+  }catch(e){ console.warn('save failed', e); }
+}
+async function loadState(){
+  try{
+    const s = await window.storage.get('gb-students');
+    if(s) students = JSON.parse(s.value);
+  }catch(e){}
+  try{
+    const a = await window.storage.get('gb-attendance');
+    if(a) attendance = JSON.parse(a.value);
+  }catch(e){}
+  try{
+    const m = await window.storage.get('gb-marks');
+    if(m) marks = JSON.parse(m.value);
+  }catch(e){}
+  try{
+    const c = await window.storage.get('gb-course');
+    if(c) courseInfo = Object.assign({ course:'', code:'', batch:'', totalClasses:'' }, JSON.parse(c.value));
+  }catch(e){}
+  // migrate old attendance format (plain number out of 10) to {present, override}
+  Object.keys(attendance).forEach(sid=>{
+    const v = attendance[sid];
+    if(typeof v === 'number'){
+      attendance[sid] = { present: undefined, override: v };
+    }
+  });
+}
+
+function updateCourseTag(){
+  document.getElementById('courseTag').textContent =
+    `Course: ${courseInfo.course || '—'} · Code: ${courseInfo.code || '—'} · Batch: ${courseInfo.batch || '—'}`;
+  const nameInp = document.getElementById('courseNameInput');
+  const codeInp = document.getElementById('courseCodeInput');
+  const batchInp = document.getElementById('courseBatchInput');
+  if(nameInp && document.activeElement!==nameInp) nameInp.value = courseInfo.course || '';
+  if(codeInp && document.activeElement!==codeInp) codeInp.value = courseInfo.code || '';
+  if(batchInp && document.activeElement!==batchInp) batchInp.value = courseInfo.batch || '';
+}
+function wireCourseInfoInputs(){
+  document.getElementById('courseNameInput').addEventListener('input', e=>{
+    courseInfo.course = e.target.value;
+    document.getElementById('courseTag').textContent =
+      `Course: ${courseInfo.course || '—'} · Code: ${courseInfo.code || '—'} · Batch: ${courseInfo.batch || '—'}`;
+    saveState();
+  });
+  document.getElementById('courseCodeInput').addEventListener('input', e=>{
+    courseInfo.code = e.target.value;
+    document.getElementById('courseTag').textContent =
+      `Course: ${courseInfo.course || '—'} · Code: ${courseInfo.code || '—'} · Batch: ${courseInfo.batch || '—'}`;
+    saveState();
+  });
+  document.getElementById('courseBatchInput').addEventListener('input', e=>{
+    courseInfo.batch = e.target.value;
+    document.getElementById('courseTag').textContent =
+      `Course: ${courseInfo.course || '—'} · Code: ${courseInfo.code || '—'} · Batch: ${courseInfo.batch || '—'}`;
+    saveState();
+  });
+}
+
+/* ---------------- Voice number parsing ---------------- */
+const NUM_WORDS = {
+  zero:0, oh:0, o:0, one:1, won:1, two:2, to:2, too:2, three:3, tree:3, free:3,
+  four:4, for:4, fore:4, five:5, six:6, sicks:6, seven:7, eight:8, ate:8,
+  nine:9, ten:10, eleven:11, twelve:12, thirteen:13, fourteen:14, fifteen:15,
+  sixteen:16, seventeen:17, eighteen:18, nineteen:19,
+  twenty:20, thirty:30, forty:40, fourty:40, fifty:50
+};
+function wordsToNumber(raw){
+  if(!raw) return null;
+  let t = raw.toLowerCase().trim().replace(/[.,!?]+$/,'');
+  if(/^(next|skip|pass|go)\b/.test(t)) return 'NEXT';
+  // strip filler words that speech-to-text sometimes adds
+  t = t.replace(/\b(mark|marks|point|of|is|the|a)\b\s*$/,'').trim();
+  // direct numeric, incl decimal e.g. "7.5"
+  if(/^-?\d+(\.\d+)?$/.test(t)) return parseFloat(t);
+  // "seven point five" / "seven decimal five"
+  let pointMatch = t.match(/^([a-z]+)\s+(?:point|decimal)\s+([a-z]+)$/);
+  if(pointMatch){
+    let whole = NUM_WORDS[pointMatch[1]];
+    let dec = NUM_WORDS[pointMatch[2]];
+    if(whole!==undefined && dec!==undefined) return parseFloat(`${whole}.${dec}`);
+  }
+  // "7 point 5" numeric+word mix
+  let mixMatch = t.match(/^(\d+)\s+(?:point|decimal)\s+(\d+)$/);
+  if(mixMatch) return parseFloat(`${mixMatch[1]}.${mixMatch[2]}`);
+  // compound like "twenty five" / "thirty eight"
+  let parts = t.split(/\s+/).filter(Boolean);
+  if(parts.length===2 && NUM_WORDS[parts[0]]!==undefined && NUM_WORDS[parts[1]]!==undefined && NUM_WORDS[parts[0]]>=20 && NUM_WORDS[parts[1]]<10){
+    return NUM_WORDS[parts[0]] + NUM_WORDS[parts[1]];
+  }
+  if(NUM_WORDS[t]!==undefined) return NUM_WORDS[t];
+  // last resort: pull any digits or a single known number-word out of the phrase
+  let direct = t.match(/-?\d+(\.\d+)?/);
+  if(direct) return parseFloat(direct[0]);
+  for(const w of parts){ if(NUM_WORDS[w]!==undefined) return NUM_WORDS[w]; }
+  return null;
+}
+
+/* ---------------- Shared voice engine (one mic at a time) ----------------
+   Chrome's SpeechRecognition tends to get "stuck" or stop recognizing well
+   after many results come through one long-lived continuous session, so
+   instead of reusing one instance we spin up a fresh one for every single
+   utterance. Each cycle: listen for one phrase -> fire result -> tear down
+   -> start a brand-new instance almost immediately. This keeps recognition
+   accurate no matter how many numbers in a row you say. */
+const VoiceEngine = (()=>{
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null;
+  let mode = null;            // 'attn' | 'marks' | null
+  let onFinalCb = null;
+  let statusEl = null, micBtn = null, heardEl = null;
+  let wantListening = false;
+  let restartTimer = null;
+  let errorStreak = 0;
+  let startingNew = false;    // guards against overlapping start() calls firing two recognizers
+
+  function freshRecognizer(){
+    const r = new SR();
+    r.continuous = false;     // one utterance per instance — avoids long-session degradation
+    r.interimResults = true;
+    r.lang = 'en-US';
+    r.maxAlternatives = 1;
+    r.onresult = (e)=>{
+      const res = e.results[e.results.length-1];
+      const transcript = res[0].transcript;
+      if(heardEl) heardEl.textContent = '“' + transcript.trim() + '”';
+      if(res.isFinal){
+        errorStreak = 0;
+        // start the next recognizer immediately (don't wait for onend) so back-to-back
+        // numbers aren't clipped by the gap between tearing down and restarting
+        clearTimeout(restartTimer);
+        restartTimer = setTimeout(cycle, 30);
+        if(onFinalCb) onFinalCb(transcript);
+      }
+    };
+    r.onerror = (e)=>{
+      if(e.error === 'not-allowed' || e.error === 'service-not-allowed'){
+        wantListening = false;
+        setUi(false);
+        if(statusEl){
+          statusEl.textContent = 'Microphone blocked — allow access in your browser\'s address-bar/site settings, then click 🎤 again';
+          statusEl.classList.add('live');
+        }
+        return;
+      }
+      if(e.error !== 'no-speech' && e.error !== 'aborted') errorStreak++;
+    };
+    r.onend = ()=>{
+      if(!wantListening) return;
+      // if onresult already scheduled the next cycle, don't double-schedule
+      if(restartTimer) return;
+      const delay = errorStreak > 3 ? 500 : 20;
+      restartTimer = setTimeout(cycle, delay);
+    };
+    return r;
+  }
+
+  function cycle(){
+    restartTimer = null;
+    if(!wantListening) return;
+    rec = freshRecognizer();
+    try{ rec.start(); }catch(e){ /* a start-while-starting race; the pending timer will retry */ }
+  }
+
+  function setUi(listening){
+    if(!micBtn) return;
+    micBtn.dataset.listening = listening ? '1' : '0';
+    micBtn.classList.toggle('listening', listening);
+  }
+
+  // Explicitly request mic access up front via getUserMedia. This makes the permission
+  // prompt appear reliably (some browsers are inconsistent about prompting from
+  // SpeechRecognition.start() alone) and lets us give a clear message on denial
+  // instead of the recognizer silently failing/looping.
+  async function ensureMicPermission(){
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      return true; // can't pre-check; let SpeechRecognition try directly
+    }
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+      stream.getTracks().forEach(t=>t.stop());
+      return true;
+    }catch(err){
+      if(statusEl){
+        statusEl.textContent = 'Microphone permission denied — allow it in your browser settings and try again';
+        statusEl.classList.add('live');
+      }
+      return false;
+    }
+  }
+
+  async function start(newMode, cb, sEl, mBtn, hEl){
+    // switching mode or (re)starting: tear down any previous session first
+    stop();
+    mode = newMode; onFinalCb = cb; statusEl = sEl; micBtn = mBtn; heardEl = hEl;
+    if(!SR){ statusEl.textContent = 'Voice not supported in this browser (try Chrome)'; return false; }
+    if(startingNew) return false;
+    startingNew = true;
+    statusEl.textContent = 'Requesting microphone…'; statusEl.classList.add('live');
+    const ok = await ensureMicPermission();
+    startingNew = false;
+    if(!ok || mode !== newMode){ setUi(false); return false; } // mode may have changed while awaiting
+    wantListening = true;
+    errorStreak = 0;
+    setUi(true);
+    statusEl.textContent = 'Listening…'; statusEl.classList.add('live');
+    cycle();
+    return true;
+  }
+
+  function stop(){
+    wantListening = false;
+    clearTimeout(restartTimer);
+    restartTimer = null;
+    if(rec){ try{ rec.onend = null; rec.onresult = null; rec.onerror = null; rec.stop(); }catch(e){} }
+    rec = null;
+    setUi(false);
+    if(statusEl){ statusEl.textContent = 'Voice off'; statusEl.classList.remove('live'); }
+    if(heardEl) heardEl.textContent = '';
+    mode = null;
+  }
+
+  function isListening(mForCheck){ return wantListening && mode === mForCheck; }
+
+  return { start, stop, isListening };
+})();
+
+/* ---------------- Step navigation ---------------- */
+function goToStep(n){
+  if(typeof VoiceEngine !== 'undefined') VoiceEngine.stop();
+  currentStep = n;
+  for(let i=1;i<=4;i++){
+    document.getElementById('panel-'+i).style.display = (i===n)?'block':'none';
+  }
+  document.querySelectorAll('.step-tab').forEach(el=>{
+    const s = parseInt(el.dataset.step);
+    el.classList.toggle('active', s===n);
+    el.classList.toggle('done', s<n);
+  });
+  if(n===2) renderAttendanceTable();
+  if(n===3) renderMarksTable();
+  if(n===4) renderMarksheet();
+}
+document.querySelectorAll('.step-tab').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    const s = parseInt(el.dataset.step);
+    if(s===1 || students.length>0) goToStep(s);
+  });
+});
+
+/* ---------------- Step 1: Student Sheet ---------------- */
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+document.getElementById('pickFileBtn').addEventListener('click', ()=>fileInput.click());
+fileInput.addEventListener('change', e=>{ if(e.target.files[0]) handlePdf(e.target.files[0]); });
+['dragenter','dragover'].forEach(ev=>dropzone.addEventListener(ev, e=>{ e.preventDefault(); dropzone.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev, e=>{ e.preventDefault(); dropzone.classList.remove('drag'); }));
+dropzone.addEventListener('drop', e=>{
+  const f = e.dataTransfer.files[0];
+  if(f && f.type==='application/pdf') handlePdf(f);
+});
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+async function handlePdf(file){
+  const statusEl = document.getElementById('fileStatus');
+  statusEl.textContent = 'Reading ' + file.name + ' …';
+  try{
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data: buf}).promise;
+    let fullText = '';
+    for(let p=1; p<=pdf.numPages; p++){
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      const lines = {};
+      content.items.forEach(it=>{
+        const y = Math.round(it.transform[5]);
+        lines[y] = (lines[y]||'') + it.str + ' ';
+      });
+      const ys = Object.keys(lines).map(Number).sort((a,b)=>b-a);
+      ys.forEach(y=> fullText += lines[y].trim() + '\n');
+    }
+    parseRosterText(fullText);
+    statusEl.textContent = `Loaded ${file.name} — extracted ${students.length} student(s). Review & edit below.`;
+  }catch(err){
+    console.error(err);
+    statusEl.textContent = 'Could not read that PDF (' + err.message + '). Add rows manually below.';
+  }
+  saveState();
+  renderRosterTable();
+}
+
+function parseRosterText(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const found = [];
+  const seenIds = new Set();
+
+  // ---- labeled header fields (Trimester / Program / Section / Course Code / Course Title / Batch) ----
+  const grab = (label)=>{
+    const re = new RegExp('(?:' + label + ')\\s*[:\\-]?\\s*([^\\n]+)', 'i');
+    const m = text.match(re);
+    return (m && m[1]) ? m[1].trim().replace(/\s{2,}/g,' ') : '';
+  };
+  const courseTitle = grab('course\\s*title|course\\s*name');
+  const courseCode = grab('course\\s*code');
+  const section = grab('section');
+  const program = grab('program');
+  const batchLabel = grab('batch\\s*(?:no\\.?|number)?');
+
+  if(courseTitle) courseInfo.course = courseTitle.slice(0,80);
+  if(courseCode) courseInfo.code = courseCode.split(/\s{2,}|\n/)[0].trim().slice(0,20);
+  // prefer an explicit "Batch" field; otherwise Section (e.g. CSE-33-D-A) doubles as batch/section id
+  if(batchLabel) courseInfo.batch = batchLabel.split(/\s{2,}/)[0].trim().slice(0,30);
+  else if(section) courseInfo.batch = section.split(/\s{2,}/)[0].trim().slice(0,30);
+  else if(program) courseInfo.batch = program.split(/\s{2,}/)[0].trim().slice(0,30);
+  updateCourseTag();
+
+  // ---- table rows: "<SL> <ID (letters + number groups)> <Name>" ----
+  // e.g. "12 CSE 033 08378 Taisaw Chak"  or  "12 20221-15-078 Jane Doe"
+  const rowRe = /^(\d{1,3})\s+([A-Za-z]{2,8}(?:\s+\d{1,6}){1,3}|\d{4,12})\s+(.+)$/;
+  const skipRe = /^(course|batch|semester|dept|department|sl\.?\s*no|serial|trimester|program|section|print\s*date|web\s*generated|page\s*\d|\d+\s*of\s*\d+)/i;
+
+  lines.forEach(line=>{
+    if(skipRe.test(line)) return;
+    const m = line.match(rowRe);
+    if(!m) return;
+    const sid = m[2].replace(/\s{2,}/g,' ').trim();
+    // strip stray trailing attendance-column digits (e.g. "Jannatul Naima 1 2 3") from name
+    let name = m[3].replace(/\s{2,}/g,' ').trim();
+    name = name.replace(/(\s+\d{1,2}){2,}\s*$/,'').trim();
+    name = name.replace(/[|,;]+$/,'').trim();
+    if(name.length < 2) return;
+    if(seenIds.has(sid)) return; // dedupe repeated header/rows across pages
+    seenIds.add(sid);
+    found.push({ sid, name });
+  });
+
+  // fallback: looser single-token ID pattern for other roster layouts
+  if(found.length === 0){
+    const idRe = /\b(\d{5,12}|[A-Z]{1,4}\d{3,10})\b/;
+    const nameRe = /[A-Za-z][A-Za-z.\-'’ ]{2,45}[A-Za-z]/;
+    lines.forEach(line=>{
+      if(skipRe.test(line)) return;
+      const idM = line.match(idRe);
+      if(!idM) return;
+      let rest = line.replace(idM[0], ' ').replace(/[|,;]/g,' ').replace(/\s{2,}/g,' ').trim();
+      const nameM = rest.match(nameRe);
+      let name = nameM ? nameM[0].trim() : rest.trim();
+      name = name.replace(/^\d+\.?\s*/,'').trim();
+      if(name.length < 2 || seenIds.has(idM[0])) return;
+      seenIds.add(idM[0]);
+      found.push({ sid: idM[0], name });
+    });
+  }
+
+  if(found.length){
+    students = found.map((f,i)=>({
+      id: 'S'+i, sid: f.sid, name: f.name,
+      batch: courseInfo.batch || '', course: courseInfo.code || ''
+    }));
+  }
+}
+
+function renderRosterTable(){
+  const wrap = document.getElementById('rosterTableWrap');
+  if(students.length===0){
+    wrap.innerHTML = `<div class="empty"><div class="big">No students yet</div>Upload a PDF above, or add rows manually.</div>`;
+    document.getElementById('toStep2Btn').disabled = true;
+    document.getElementById('rosterCount').textContent = '';
+    return;
+  }
+  let rows = students.map((s,i)=>`
+    <tr>
+      <td style="width:36px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;">${i+1}</td>
+      <td><input class="cell" data-i="${i}" data-f="sid" value="${escapeHtml(s.sid)}"></td>
+      <td><input class="cell name-cell" data-i="${i}" data-f="name" value="${escapeHtml(s.name)}"></td>
+      <td><input class="cell" data-i="${i}" data-f="batch" value="${escapeHtml(s.batch)}"></td>
+      <td><input class="cell" data-i="${i}" data-f="course" value="${escapeHtml(s.course)}"></td>
+      <td style="width:40px;"><button class="btn small outline no-print" data-del="${i}">✕</button></td>
+    </tr>`).join('');
+  wrap.innerHTML = `<div class="tbl-wrap"><table>
+    <thead><tr><th>#</th><th>Student ID</th><th>Name</th><th>Batch</th><th>Course Code</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+
+  wrap.querySelectorAll('input.cell').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const i = parseInt(inp.dataset.i), f = inp.dataset.f;
+      students[i][f] = inp.value;
+      saveState();
+    });
+  });
+  wrap.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      students.splice(parseInt(btn.dataset.del),1);
+      saveState(); renderRosterTable();
+    });
+  });
+
+  document.getElementById('rosterCount').textContent = `${students.length} student(s)`;
+  document.getElementById('toStep2Btn').disabled = false;
+}
+
+document.getElementById('addRowBtn').addEventListener('click', ()=>{
+  students.push({ id:'S'+students.length+'-'+Date.now(), sid:'', name:'', batch: courseInfo.batch||'', course: courseInfo.code||''});
+  saveState(); renderRosterTable();
+});
+document.getElementById('toStep2Btn').addEventListener('click', ()=>goToStep(2));
+
+function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------------- Step 2: Attendance ---------------- */
+const totalClassesInput = document.getElementById('totalClassesInput');
+totalClassesInput.addEventListener('input', ()=>{
+  courseInfo.totalClasses = totalClassesInput.value;
+  saveState();
+  renderAttendanceTable();
+});
+function refreshTotalClassesUI(){
+  totalClassesInput.value = courseInfo.totalClasses || '';
+  const hintEl = document.getElementById('totalClassesHint');
+  hintEl.textContent = courseInfo.totalClasses ? '' : 'Set this first — marks/10 can\'t be calculated without it.';
+}
+
+function renderAttendanceTable(){
+  refreshTotalClassesUI();
+  const wrap = document.getElementById('attnTableWrap');
+  if(students.length===0){ wrap.innerHTML = `<div class="empty">No students loaded.</div>`; return; }
+  const total = parseFloat(courseInfo.totalClasses);
+  let rows = students.map((s,i)=>{
+    const rec = attendance[s.id] || {};
+    const info = getAttendanceMark(s.id);
+    const pctText = info.pct!==undefined ? info.pct.toFixed(1)+'%' : '—';
+    return `<tr id="attn-row-${i}" class="${i===attnActiveIdx?'active-row':''}">
+      <td style="width:36px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;">${i+1}</td>
+      <td style="font-family:'JetBrains Mono',monospace;">${escapeHtml(s.sid)}</td>
+      <td>${escapeHtml(s.name)}</td>
+      <td class="num-cell" style="width:110px;">
+        <input class="cell attn-present" data-i="${i}" type="number" min="0" ${total?('max="'+total+'"'):''} step="1"
+          value="${rec.present!==undefined && rec.present!==null ? rec.present : ''}" placeholder="present">
+      </td>
+      <td style="width:80px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;">${pctText}</td>
+      <td class="num-cell" style="width:110px;">
+        <input class="cell attn-marks" data-i="${i}" type="number" min="0" max="10" step="1"
+          value="${info.mark!==undefined ? info.mark : ''}" placeholder="/10"
+          title="${info.isOverride ? 'Manually overridden' : 'Auto-calculated — edit to override'}"
+          style="${info.isOverride ? 'border-color:var(--gold); background:var(--gold-soft);' : ''}">
+      </td>
+      <td style="width:60px;">${info.isOverride ? `<button class="btn small outline no-print" data-reset="${i}" title="Reset to auto-calculated">↺</button>` : ''}</td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table><thead><tr><th>#</th><th>ID</th><th>Name</th><th>Classes Present</th><th>Attendance %</th><th>Marks /10</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+
+  wrap.querySelectorAll('.attn-present').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const i = parseInt(inp.dataset.i);
+      const sid = students[i].id;
+      attendance[sid] = attendance[sid] || {};
+      attendance[sid].present = inp.value===''? undefined : parseFloat(inp.value);
+      saveState();
+      renderAttendanceTable();
+      setAttnActive(i, false);
+    });
+    inp.addEventListener('keydown', e=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        const i = parseInt(inp.dataset.i);
+        setAttnActive(Math.min(i+1, students.length-1));
+      } else if(e.key==='ArrowDown'){
+        e.preventDefault();
+        setAttnActive(Math.min(parseInt(inp.dataset.i)+1, students.length-1));
+      } else if(e.key==='ArrowUp'){
+        e.preventDefault();
+        setAttnActive(Math.max(parseInt(inp.dataset.i)-1, 0));
+      }
+    });
+    inp.addEventListener('focus', ()=> setAttnActive(parseInt(inp.dataset.i), false));
+  });
+  wrap.querySelectorAll('.attn-marks').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const i = parseInt(inp.dataset.i);
+      const sid = students[i].id;
+      attendance[sid] = attendance[sid] || {};
+      attendance[sid].override = inp.value===''? undefined : Math.max(0, Math.min(10, parseFloat(inp.value)));
+      saveState();
+      renderAttendanceTable();
+    });
+  });
+  wrap.querySelectorAll('[data-reset]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const i = parseInt(btn.dataset.reset);
+      const sid = students[i].id;
+      if(attendance[sid]) attendance[sid].override = undefined;
+      saveState();
+      renderAttendanceTable();
+    });
+  });
+}
+function setAttnActive(i, focusInput=true){
+  attnActiveIdx = i;
+  document.querySelectorAll('#attnTableWrap tr').forEach(r=>r.classList.remove('active-row'));
+  const row = document.getElementById('attn-row-'+i);
+  if(row){
+    row.classList.add('active-row');
+    row.scrollIntoView({block:'nearest'});
+    if(focusInput){
+      const inp = row.querySelector('.attn-present');
+      if(inp){ inp.focus(); inp.select(); }
+    }
+  }
+}
+
+const attnMicBtn = document.getElementById('attnMicBtn');
+const attnStatus = document.getElementById('attnStatus');
+const attnHeard = document.getElementById('attnHeard');
+attnMicBtn.addEventListener('click', ()=>{
+  if(VoiceEngine.isListening('attn')){ VoiceEngine.stop(); return; }
+  if(students.length===0) return;
+  VoiceEngine.start('attn', handleAttnVoice, attnStatus, attnMicBtn, attnHeard);
+});
+function handleAttnVoice(transcript){
+  const val = wordsToNumber(transcript);
+  if(val===null) return;
+  if(students.length===0) return;
+  const s = students[attnActiveIdx];
+  if(val!=='NEXT'){
+    const total = parseFloat(courseInfo.totalClasses);
+    const cap = total>0 ? total : 999;
+    attendance[s.id] = attendance[s.id] || {};
+    attendance[s.id].present = Math.max(0, Math.min(cap, val));
+    saveState();
+  }
+  renderAttendanceTable();
+  setAttnActive(Math.min(attnActiveIdx+1, students.length-1), false);
+  if(attnStatus) attnStatus.textContent = 'Listening…';
+}
+
+document.getElementById('backTo1Btn').addEventListener('click', ()=>goToStep(1));
+document.getElementById('toStep3Btn').addEventListener('click', ()=>goToStep(3));
+
+/* ---------------- Step 3: Marks ---------------- */
+function renderMarksTable(){
+  const wrap = document.getElementById('marksTableWrap');
+  if(students.length===0){ wrap.innerHTML = `<div class="empty">No students loaded.</div>`; return; }
+  let rows = students.map((s,i)=>{
+    const m = marks[s.id] || {};
+    const cell = (f)=>`<td class="num-cell"><input class="cell marks-input" data-i="${i}" data-f="${f}" type="number" min="0" max="${FIELD_CAPS[f]}" step="0.5" value="${m[f]!==undefined?m[f]:''}"></td>`;
+    return `<tr id="marks-row-${i}" class="${i===marksActiveIdx?'active-row':''}">
+      <td style="width:34px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;">${i+1}</td>
+      <td>${escapeHtml(s.name)}</td>
+      ${cell('ct1')}${cell('ct2')}${cell('mid')}${cell('final')}${cell('asgn1')}${cell('asgn2')}
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<table><thead><tr>
+    <th>#</th><th>Name</th><th>CT1</th><th>CT2</th><th>Mid</th><th>Final</th><th>Asg1</th><th>Asg2</th>
+  </tr></thead><tbody>${rows}</tbody></table>`;
+
+  wrap.querySelectorAll('.marks-input').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const i = parseInt(inp.dataset.i), f = inp.dataset.f;
+      const sid = students[i].id;
+      marks[sid] = marks[sid] || {};
+      marks[sid][f] = inp.value===''? undefined : parseFloat(inp.value);
+      saveState();
+    });
+    inp.addEventListener('keydown', e=>{
+      const i = parseInt(inp.dataset.i), f = inp.dataset.f;
+      if(e.key==='Enter'){
+        e.preventDefault();
+        setMarksActive(Math.min(i+1, students.length-1));
+      } else if(e.key==='ArrowDown'){
+        e.preventDefault();
+        const ni = Math.min(i+1, students.length-1);
+        marksActiveIdx = ni;
+        const next = wrap.querySelector(`.marks-input[data-i="${ni}"][data-f="${f}"]`);
+        if(next){ next.focus(); next.select(); }
+        highlightMarksRow(ni);
+      } else if(e.key==='ArrowUp'){
+        e.preventDefault();
+        const ni = Math.max(i-1, 0);
+        marksActiveIdx = ni;
+        const prev = wrap.querySelector(`.marks-input[data-i="${ni}"][data-f="${f}"]`);
+        if(prev){ prev.focus(); prev.select(); }
+        highlightMarksRow(ni);
+      }
+    });
+    inp.addEventListener('focus', ()=> setMarksActive(parseInt(inp.dataset.i), false));
+  });
+}
+function setMarksActive(i, focusInput=true){
+  marksActiveIdx = i;
+  document.querySelectorAll('#marksTableWrap tr').forEach(r=>r.classList.remove('active-row'));
+  const row = document.getElementById('marks-row-'+i);
+  if(row){
+    row.classList.add('active-row');
+    row.scrollIntoView({block:'nearest'});
+    if(focusInput){
+      const field = document.getElementById('fieldSelect').value;
+      const inp = row.querySelector(`input[data-f="${field}"]`);
+      if(inp){ inp.focus(); inp.select(); }
+    }
+  }
+}
+function highlightMarksRow(i){
+  document.querySelectorAll('#marksTableWrap tr').forEach(r=>r.classList.remove('active-row'));
+  const row = document.getElementById('marks-row-'+i);
+  if(row){ row.classList.add('active-row'); row.scrollIntoView({block:'nearest'}); }
+}
+
+const marksMicBtn = document.getElementById('marksMicBtn');
+const marksStatus = document.getElementById('marksStatus');
+const marksHeard = document.getElementById('marksHeard');
+marksMicBtn.addEventListener('click', ()=>{
+  if(VoiceEngine.isListening('marks')){ VoiceEngine.stop(); return; }
+  if(students.length===0) return;
+  VoiceEngine.start('marks', handleMarksVoice, marksStatus, marksMicBtn, marksHeard);
+  const field = document.getElementById('fieldSelect').selectedOptions[0].text;
+  marksStatus.textContent = 'Listening — ' + field; marksStatus.classList.add('live');
+});
+document.getElementById('fieldSelect').addEventListener('change', ()=>{
+  if(VoiceEngine.isListening('marks')){
+    const field = document.getElementById('fieldSelect').selectedOptions[0].text;
+    marksStatus.textContent = 'Listening — ' + field;
+  }
+});
+function handleMarksVoice(transcript){
+  const val = wordsToNumber(transcript);
+  if(val===null) return;
+  if(students.length===0) return;
+  const field = document.getElementById('fieldSelect').value;
+  const s = students[marksActiveIdx];
+  if(val!=='NEXT'){
+    const cap = FIELD_CAPS[field];
+    marks[s.id] = marks[s.id] || {};
+    marks[s.id][field] = Math.max(0, Math.min(cap, val));
+    saveState();
+  }
+  renderMarksTable();
+  setMarksActive(Math.min(marksActiveIdx+1, students.length-1), false);
+  const field2 = document.getElementById('fieldSelect').selectedOptions[0].text;
+  marksStatus.textContent = 'Listening — ' + field2;
+}
+
+document.getElementById('backTo2Btn').addEventListener('click', ()=>goToStep(2));
+document.getElementById('toStep4Btn').addEventListener('click', ()=>goToStep(4));
+
+/* ---------------- Step 4: Marksheet ---------------- */
+function gradeFor(pct){
+  if(pct>=80) return {g:'A+', gp:4.00};
+  if(pct>=75) return {g:'A', gp:3.75};
+  if(pct>=70) return {g:'A-', gp:3.50};
+  if(pct>=65) return {g:'B+', gp:3.25};
+  if(pct>=60) return {g:'B', gp:3.00};
+  if(pct>=55) return {g:'B-', gp:2.75};
+  if(pct>=50) return {g:'C+', gp:2.50};
+  if(pct>=45) return {g:'C', gp:2.25};
+  if(pct>=40) return {g:'D', gp:2.00};
+  return {g:'F', gp:0.00};
+}
+function computeRow(s){
+  const m = marks[s.id] || {};
+  const ct1 = m.ct1||0, ct2 = m.ct2||0, mid = m.mid||0, final = m.final||0, a1 = m.asgn1||0, a2 = m.asgn2||0;
+  const ct = ct1+ct2;
+  const asgn = a1+a2;
+  const total = ct + mid + final + asgn;
+  const pct = MAX_TOTAL>0 ? (total/MAX_TOTAL)*100 : 0;
+  const {g, gp} = gradeFor(pct);
+  const attInfo = getAttendanceMark(s.id);
+  const status = pct>=40 ? 'Pass' : 'Fail';
+  return { ct, mid, final, asgn, total, pct, g, gp, att: attInfo.mark, attPct: attInfo.pct, status };
+}
+function renderMarksheet(){
+  const wrap = document.getElementById('marksheetWrap');
+  const statsWrap = document.getElementById('statsGrid');
+  const lineEl = document.getElementById('reportCourseLine');
+  if(lineEl){
+    const parts = [];
+    if(courseInfo.course) parts.push(`Course: ${escapeHtml(courseInfo.course)}`);
+    if(courseInfo.code) parts.push(`Code: ${escapeHtml(courseInfo.code)}`);
+    if(courseInfo.batch) parts.push(`Batch/Section: ${escapeHtml(courseInfo.batch)}`);
+    lineEl.textContent = parts.length ? parts.join('  ·  ') : '';
+  }
+  if(students.length===0){ wrap.innerHTML = `<div class="empty">No students loaded.</div>`; statsWrap.innerHTML=''; return; }
+
+  const computed = students.map(s=>({s, r: computeRow(s)}));
+  const totals = computed.map(c=>c.r.total);
+  const avg = (totals.reduce((a,b)=>a+b,0)/totals.length).toFixed(1);
+  const high = Math.max(...totals).toFixed(1);
+  const low = Math.min(...totals).toFixed(1);
+  const passCount = computed.filter(c=>c.r.status==='Pass').length;
+  const passRate = ((passCount/computed.length)*100).toFixed(0);
+
+  statsWrap.innerHTML = `
+    <div class="stat-card"><div class="v">${computed.length}</div><div class="l">Students</div></div>
+    <div class="stat-card"><div class="v">${avg}</div><div class="l">Class Average</div></div>
+    <div class="stat-card"><div class="v">${high}</div><div class="l">Highest</div></div>
+    <div class="stat-card"><div class="v">${low}</div><div class="l">Lowest</div></div>
+    <div class="stat-card"><div class="v">${passRate}%</div><div class="l">Pass Rate (${passCount}/${computed.length})</div></div>
+  `;
+
+  let rows = computed.map((c,i)=>{
+    const s = c.s, r = c.r;
+    return `<tr>
+      <td>${i+1}</td>
+      <td style="font-family:'JetBrains Mono',monospace;">${escapeHtml(s.sid)}</td>
+      <td>${escapeHtml(s.name)}</td>
+      <td>${r.ct}/10</td>
+      <td>${r.mid}/30</td>
+      <td>${r.final}/40</td>
+      <td>${r.asgn}/10</td>
+      <td><strong>${r.total}/90</strong> <span class="hint">(${r.pct.toFixed(1)}%)</span></td>
+      <td>${r.att!==undefined ? r.att+'/10' : '—'}</td>
+      <td class="grade-chip">${r.g}</td>
+      <td><span class="badge ${r.status==='Pass'?'pass':'fail'}">${r.status}</span></td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `<table><thead><tr>
+    <th>#</th><th>ID</th><th>Name</th><th>CT (10)</th><th>Mid (30)</th><th>Final (40)</th><th>Asgn (10)</th>
+    <th>Total (90)</th><th>Attendance</th><th>Grade</th><th>Status</th>
+  </tr></thead><tbody>${rows}</tbody></table>`;
+
+  renderTopPerformers();
+}
+
+const TP_FIELDS = [
+  {key:'ct1', label:'CT1'}, {key:'ct2', label:'CT2'}, {key:'mid', label:'Mid'},
+  {key:'final', label:'Final'}, {key:'asgn1', label:'Asgn 1'}, {key:'asgn2', label:'Asgn 2'}
+];
+function renderTopPerformers(){
+  const el = document.getElementById('topPerformers');
+  if(!el) return;
+
+  // group students by batch (fallback to a single "All Students" group if batch is blank/uniform)
+  const groups = {};
+  students.forEach(s=>{
+    const key = (s.batch && s.batch.trim()) ? s.batch.trim() : 'All Students';
+    (groups[key] = groups[key] || []).push(s);
+  });
+
+  const batchKeys = Object.keys(groups);
+  let html = `<h3 style="font-family:'Fraunces',serif;font-size:1.1rem;margin:0 0 12px;">🏆 Top 3 by Component ${batchKeys.length>1?'(per Batch)':''}</h3>`;
+
+  batchKeys.forEach(batchKey=>{
+    const list = groups[batchKey];
+    const cols = TP_FIELDS.map(f=>{
+      const ranked = list
+        .map(s=>({ name:s.name || s.sid, score: (marks[s.id] && marks[s.id][f.key]!==undefined) ? marks[s.id][f.key] : null }))
+        .filter(x=>x.score!==null)
+        .sort((a,b)=>b.score - a.score)
+        .slice(0,3);
+      const items = ranked.length
+        ? ranked.map(r=>`<li><b>${r.score}</b> — ${escapeHtml(r.name)}</li>`).join('')
+        : `<li class="tp-empty">No marks yet</li>`;
+      return `<div class="tp-col"><div class="tp-label">${f.label}</div><ol>${items}</ol></div>`;
+    }).join('');
+    html += `<div class="tp-batch"><h3>${escapeHtml(batchKey)} · ${list.length} student(s)</h3><div class="tp-grid">${cols}</div></div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+document.getElementById('backTo3Btn').addEventListener('click', ()=>goToStep(3));
+
+document.getElementById('csvBtn').addEventListener('click', ()=>{
+  const header = ['#','Student ID','Name','CT(10)','Mid(30)','Final(40)','Asgn(10)','Total(90)','Total(%)','Attendance(10)','Grade','Status'];
+  const lines = [header.join(',')];
+  students.forEach((s,i)=>{
+    const r = computeRow(s);
+    lines.push([i+1, s.sid, `"${(s.name||'').replace(/"/g,'""')}"`, r.ct, r.mid, r.final, r.asgn, r.total, r.pct.toFixed(1), (r.att!==undefined?r.att:''), r.g, r.status].join(','));
+  });
+  const blob = new Blob([lines.join('\n')], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `marksheet_${courseInfo.code||'course'}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+
+/* ---------------- Init ---------------- */
+(async function init(){
+  wireCourseInfoInputs();
+  await loadState();
+  updateCourseTag();
+  renderRosterTable();
+  goToStep(1);
+})();
+</script>
+</body>
+</html>
